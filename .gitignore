@@ -1,0 +1,13 @@
+# Devpost learning context
+/devpost/learner-profile.md
+
+# Credentials & environment
+.env
+.env.*
+!.env.example
+
+# Build artifacts
+*.exe
+node_modules/
+dist/
+.DS_Store

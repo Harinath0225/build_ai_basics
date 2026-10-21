@@ -1,0 +1,23 @@
+[
+  {
+    "id": "rule_char_01",
+    "category": "character",
+    "constraint": "Protagonist costume details (cobalt-blue leather aviator jacket, brass buckles, dark denim) must remain unchanged across all scene cuts.",
+    "version": 1,
+    "last_patched": "2026-10-21T16:38:05+11:00"
+  },
+  {
+    "id": "rule_light_01",
+    "category": "lighting",
+    "constraint": "Lighting key must maintain neon-cyan rim light and golden-amber fill across day/night transitions.",
+    "version": 1,
+    "last_patched": "2026-10-21T16:38:05+11:00"
+  },
+  {
+    "id": "rule_dance_01",
+    "category": "motion",
+    "constraint": "Choreography and human dance moves must preserve realistic anatomy and outfit physics without morphing fabric or limb geometry.",
+    "version": 1,
+    "last_patched": "2026-10-21T16:38:05+11:00"
+  }
+]
