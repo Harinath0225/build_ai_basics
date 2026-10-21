@@ -4,6 +4,7 @@ import ConceptStudio from './components/ConceptStudio';
 import LyricistLounge from './components/LyricistLounge';
 import TimelineDirector from './components/TimelineDirector';
 import ContinuityAudit from './components/ContinuityAudit';
+import PromptDeck from './components/PromptDeck';
 
 export default function App() {
   const [formData, setFormData] = useState({
@@ -127,6 +128,7 @@ export default function App() {
             concept={concept}
             onAuditComplete={handleAuditComplete}
           />
+          <PromptDeck concept={concept} />
         </>
       )}
     </div>

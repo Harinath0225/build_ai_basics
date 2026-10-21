@@ -29,7 +29,7 @@ Build mode: fast
   Learner check: Change a scene's camera angle to "Dolly Shot" or toggle dance motion, and confirm the scene prompt updates immediately.
   Commit: `feat: add character anchor, StudioBinder camera angles, and dance steps`
 
-- [ ] **3. Chroma DB Vector Memory & Autonomous Continuity Drift Auditor with Self-Patching Rules**
+- [x] **3. Chroma DB Vector Memory & Autonomous Continuity Drift Auditor with Self-Patching Rules**
   Becomes usable: The core intelligence loop: clicking "Run Continuity Audit" runs semantic similarity analysis across scenes (via Chroma DB HTTP or local vector fallback), detects any character or lighting drift, logs the autonomous rule patch to persistent storage (`backend/data/rules.json`), and reloads active agent memory.
   Why now: Implements the unique kernel and your primary learning goal early, proving autonomous self-patching and persistent vector memory.
   PRD ref: `prd.md > Features and Behavior > 4. Autonomous Continuity Audit & Self-Patching Rules`
