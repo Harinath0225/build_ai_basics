@@ -15,13 +15,19 @@ import (
 // Agent handles concept expansion, direction, and prompt generation
 type Agent struct {
 	geminiAPIKey string
+	geminiModel  string
 	rulesManager *RulesManager
 }
 
 // NewAgent creates a new Agent instance
 func NewAgent(rm *RulesManager) *Agent {
+	model := os.Getenv("GEMINI_MODEL")
+	if model == "" {
+		model = "gemini-1.5-flash"
+	}
 	return &Agent{
 		geminiAPIKey: os.Getenv("GEMINI_API_KEY"),
+		geminiModel:  model,
 		rulesManager: rm,
 	}
 }
@@ -62,7 +68,7 @@ func (a *Agent) ExpandConcept(req models.ProjectRequest) (*models.ExpandedConcep
 
 // expandWithGemini makes a call to Google Gemini API
 func (a *Agent) expandWithGemini(req models.ProjectRequest, sceneCount int) (*models.ExpandedConcept, error) {
-	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=%s", a.geminiAPIKey)
+	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", a.geminiModel, a.geminiAPIKey)
 
 	systemPrompt := `You are an elite Hollywood Director and Master Lyricist for multi-scene AI video and music production.
 Output MUST be strict JSON matching this schema:
