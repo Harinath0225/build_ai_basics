@@ -19,5 +19,12 @@
     "constraint": "Choreography and human dance moves must preserve realistic anatomy and outfit physics without morphing fabric or limb geometry.",
     "version": 1,
     "last_patched": "2026-10-21T16:38:05+11:00"
+  },
+  {
+    "id": "rule_patch_9400",
+    "category": "character",
+    "constraint": "Scene 3 Continuity Enforced: Character [Kaelen] costume (tall protagonist wearing an iridescent cobalt-blue leather aviator jacket with brass buckles, dark denim trousers, combat boots, silver-streaked dark hair) and lighting key (dramatic neon-cyan rim lighting with warm golden-amber practical streetlamp fill) strictly locked.",
+    "version": 1,
+    "last_patched": "2026-10-21T16:57:28+11:00"
   }
 ]

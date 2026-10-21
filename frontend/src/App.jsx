@@ -3,6 +3,7 @@ import Header from './components/Header';
 import ConceptStudio from './components/ConceptStudio';
 import LyricistLounge from './components/LyricistLounge';
 import TimelineDirector from './components/TimelineDirector';
+import ContinuityAudit from './components/ContinuityAudit';
 
 export default function App() {
   const [formData, setFormData] = useState({
@@ -76,6 +77,15 @@ export default function App() {
     });
   };
 
+  const handleAuditComplete = (auditResult) => {
+    if (auditResult?.scenes) {
+      setConcept(prev => ({
+        ...prev,
+        scenes: auditResult.scenes
+      }));
+    }
+  };
+
   return (
     <div className="app-container">
       <Header 
@@ -112,6 +122,10 @@ export default function App() {
             onUpdateScene={handleUpdateScene}
             visualStyle={formData.visualStyle}
             includeDance={formData.includeDance}
+          />
+          <ContinuityAudit 
+            concept={concept}
+            onAuditComplete={handleAuditComplete}
           />
         </>
       )}

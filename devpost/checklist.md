@@ -19,7 +19,7 @@ Build mode: fast
   Learner check: Open `http://localhost:5173`, enter a story gist, click "Expand & Direct", and verify the expanded lyrics and 10 scene cards unfold with smooth motion.
   Commit: `feat: bootstrap studio with scene math and lyricist expansion`
 
-- [ ] **2. Character Sketch Anchor, StudioBinder Camera Director & Dance Steps**
+- [x] **2. Character Sketch Anchor, StudioBinder Camera Director & Dance Steps**
   Becomes usable: Interactive scene timeline where each scene card displays a recommended StudioBinder camera angle (Dolly, Tracking, Crane, Low-Angle, etc.) and realistic human dance motion prompt; users can override camera angles and see prompt updates live.
   Why now: Establishes the visual identity anchor and cinematography controls before the continuity audit pass tests them for drift.
   PRD ref: `prd.md > Features and Behavior > 3. Character Sketch Anchor, Camera Director & Dance Choreography`
@@ -51,7 +51,7 @@ Build mode: fast
 
 ## Hands-on Checkpoints
 
-- [ ] Early usable behavior explored — Slice 2 (Timeline with Camera Angles & Dance Steps)
+- [x] Early usable behavior explored — Slice 2 (Timeline with Camera Angles & Dance Steps)
 - [ ] Final kick-the-tires exploration and feedback completed — Slice 4 (Complete Studio with Prompt Deck)
 
 ## Final Review

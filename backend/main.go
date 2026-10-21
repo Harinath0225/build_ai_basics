@@ -43,8 +43,9 @@ func main() {
 		log.Fatalf("Failed to initialize rules manager: %v", err)
 	}
 
-	// 3. Initialize Agent engine
+	// 3. Initialize Agent engine and Vector Memory
 	studioAgent := agent.NewAgent(rulesMgr)
+	vectorMem := agent.NewVectorMemory()
 
 	// 4. Setup HTTP routes
 	mux := http.NewServeMux()
@@ -53,9 +54,20 @@ func main() {
 	mux.HandleFunc("/api/health", enableCORS(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"status":  "ok",
-			"service": "ContinuityStudio Agent Server",
-			"rules":   len(rulesMgr.GetRules()),
+			"status":        "ok",
+			"service":       "ContinuityStudio Agent Server",
+			"rules":         len(rulesMgr.GetRules()),
+			"chroma_online": vectorMem.IsChromaOnline(),
+		})
+	}))
+
+	// Memory & Chroma status endpoint
+	mux.HandleFunc("/api/memory/status", enableCORS(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"chroma_online": vectorMem.IsChromaOnline(),
+			"memory_type":   "Chroma DB HTTP + Embedded Vector Fallback",
+			"rules_count":   len(rulesMgr.GetRules()),
 		})
 	}))
 
@@ -117,6 +129,29 @@ func main() {
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(updatedScene)
+	}))
+
+	// Step 3: Run autonomous continuity drift audit and patch persistent rules
+	mux.HandleFunc("/api/audit", enableCORS(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		var concept models.ExpandedConcept
+		if err := json.NewDecoder(r.Body).Decode(&concept); err != nil {
+			http.Error(w, fmt.Sprintf("Invalid JSON: %v", err), http.StatusBadRequest)
+			return
+		}
+
+		result, err := studioAgent.AuditContinuity(&concept)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Audit failed: %v", err), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(result)
 	}))
 
 	// Rules inspection endpoint
