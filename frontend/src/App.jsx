@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Header from './components/Header';
 import ConceptStudio from './components/ConceptStudio';
 import LyricistLounge from './components/LyricistLounge';
+import TimelineDirector from './components/TimelineDirector';
 
 export default function App() {
   const [formData, setFormData] = useState({
@@ -66,6 +67,15 @@ export default function App() {
     }
   };
 
+  const handleUpdateScene = (index, updatedScene) => {
+    setConcept(prev => {
+      if (!prev) return prev;
+      const updatedScenes = [...prev.scenes];
+      updatedScenes[index] = updatedScene;
+      return { ...prev, scenes: updatedScenes };
+    });
+  };
+
   return (
     <div className="app-container">
       <Header 
@@ -95,7 +105,15 @@ export default function App() {
       />
 
       {concept && (
-        <LyricistLounge concept={concept} />
+        <>
+          <LyricistLounge concept={concept} />
+          <TimelineDirector 
+            concept={concept}
+            onUpdateScene={handleUpdateScene}
+            visualStyle={formData.visualStyle}
+            includeDance={formData.includeDance}
+          />
+        </>
       )}
     </div>
   );

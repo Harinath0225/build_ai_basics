@@ -59,6 +59,12 @@ func main() {
 		})
 	}))
 
+	// StudioBinder camera shots catalog
+	mux.HandleFunc("/api/camerashots", enableCORS(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(agent.StudioBinderShots)
+	}))
+
 	// Step 1: Expand story gist and compute scene breakdown
 	mux.HandleFunc("/api/expand", enableCORS(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -85,6 +91,32 @@ func main() {
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(concept)
+	}))
+
+	// Step 2: Recalculate prompt when camera angle or dance step is customized
+	mux.HandleFunc("/api/direct", enableCORS(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		var payload struct {
+			Scene        models.ScenePrompt     `json:"scene"`
+			Character    models.CharacterAnchor `json:"character"`
+			VisualStyle  string                 `json:"visual_style"`
+			IncludeDance bool                   `json:"include_dance"`
+		}
+
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			http.Error(w, fmt.Sprintf("Invalid JSON: %v", err), http.StatusBadRequest)
+			return
+		}
+
+		updatedScene := payload.Scene
+		studioAgent.UpdateSceneDirection(&updatedScene, payload.Character, payload.VisualStyle, payload.IncludeDance)
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(updatedScene)
 	}))
 
 	// Rules inspection endpoint

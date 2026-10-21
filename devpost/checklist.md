@@ -9,7 +9,7 @@ Build mode: fast
 
 ## Slices
 
-- [ ] **1. Studio Foundation, Scene Math & Lyricist Persona Expansion**
+- [x] **1. Studio Foundation, Scene Math & Lyricist Persona Expansion**
   Becomes usable: A running Go backend and React frontend where a creator can enter a story gist, select durations (e.g. 60s total, 6s scenes), and see the expanded narrative beats, lyricist rhymes, and calculated scene cards (10 scenes) unfold on screen.
   Why now: Bootstraps both environments inside a usable end-to-end slice, proving frontend-to-backend communication, scene duration calculations, and LLM expansion right away.
   PRD ref: `prd.md > Features and Behavior > 1. Duration Math` & `2. Idea Expansion & Lyricist Persona`
