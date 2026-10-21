@@ -39,7 +39,7 @@ Build mode: fast
   Learner check: Click "Run Continuity Audit" in the UI, watch the audit animation, and verify the patch event log and "Continuity Locked" emerald badges appear.
   Commit: `feat: implement Chroma vector memory, drift auditor, and autonomous rule patching`
 
-- [ ] **4. Production Prompt Deck & 1-Click Clipboard Export**
+- [x] **4. Production Prompt Deck & 1-Click Clipboard Export**
   Becomes usable: Ready-to-use production prompt deck displaying formatted prompt cards for Google Veo and Suno, complete with 1-click clipboard copy triggers, copy-all bundle, and toast notifications.
   Why now: Completes the full user journey from raw story idea to copy-pasteable production assets ready for the demo video.
   PRD ref: `prd.md > Features and Behavior > 5. Production Prompt Deck & Clipboard Export`
@@ -71,3 +71,5 @@ Reflection: [to be recorded upon completion]
 Activity mode: [to be recorded upon completion]
 
 ## Revisions
+
+- Configurable `GEMINI_MODEL` added to `.env` — enables switching between models (e.g. `gemini-1.5-flash`, `gemini-1.5-pro`, `gemini-2.0-flash`) without code changes.
