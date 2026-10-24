@@ -16,20 +16,22 @@ Source: `scope.md > ContinuityStudio: Multi-Scene Continuity Workflow Agent`
 5. **Production Prompt Deck & Copy:** The final stage reveals clean production-ready prompt cards for each scene, equipped with one-click copy buttons for Google Veo prompts and Suno music prompts, plus an export/copy-all package.
 
 ## Screens and Layout
-A **Progressive Single-Page Studio** where sections unfold with smooth motion transitions as earlier steps are completed:
-- **Header:** Studio title, project status, and "Reset / Load Sample" shortcuts.
-- **Surface 1 — Concept & Style Desk:** Input fields for Story/Rhyme Gist, Visual Style, Music Mood/Genre, Scene Duration toggle (6s, 8s, 10s), and Total Duration selector (30s, 60s, 90s). Prominent "Expand & Direct" action button.
-- **Surface 2 — Lyricist Lounge & Story Arc (Unfolds on step 1 complete):** Displays the expanded narrative beats, the AI lyricist's crafted verses/rhymes, and the master Suno audio prompt card.
-- **Surface 3 — Character Anchor & Scene Director Timeline (Unfolds next):** 
-  - Persistent Character Sketch card (shows locked visual DNA and lighting key).
-  - Horizontal/vertical timeline cards for each calculated scene, displaying scene number, timestamp range (e.g., 00:00 - 00:06), visual prompt summary, and an interactive **Camera Angle selector** (pre-selected with the agent's recommendation).
-- **Surface 4 — Continuity Engine & Rule-Patch Log (Unfolds next):** Live visual audit badge ("Continuity Verified"), showing any detected drift and the autonomous patch applied to persistent storage.
-- **Surface 5 — Production Prompt Deck:** Tabular/Card layout displaying the finalized Veo prompts (with camera angle & character anchor baked in) and Suno audio cues, each with a 1-click clipboard copy button.
+Five fluid screens built with the **Deep Field** design system, linked by a header step trail (**Story, Sound, Shots, Check**) and **Back / Continue** navigation:
+- **Header (`Header.jsx`):** Brand mark (orbital ellipse + core + pink moon dot) and "Continuity Studio" in Fraunces 600 on the left; 4-step trail (`Story`, `Sound`, `Shots`, `Check`) joined by 24px hairline connectors on the right (or `← Back to check` on the Export screen).
+- **Screen 1 — Story (`ConceptStudio.jsx`, 760px column):** Title *"What is your story about?"*, a large `THE GIST` textarea, three duration & prompt math controls (`EXPECTED VIDEO LENGTH` e.g. 2 mins / 120s, `SECS GENERATED PER SHOT` e.g. 6s = 20 story video prompts, and `ADDITIONAL DANCE PROMPTS` e.g. +5 dance prompts = 25 total 3D Animated Pixar prompts), a live spectral readout bar, a `"Try a demo story (2m · 20 + 5 dance)"` ghost button, an unfolding editable `3D PIXAR STORY PROMPT` textarea with `"Reset to suggestion"`, and a primary `"Continue"` button.
+- **Screen 2 — Sound (`LyricistLounge.jsx`, 760px column):** Title *"How should it sound?"*, an editable `SUNO MUSIC & AUDIO PROMPT` textarea calibrated to the exact video duration (e.g. `2:00`), an editable `SUNO SONG STRUCTURE & DANCE GROOVE CUES` box, `"Copy Suno prompt"`, `"Reset to suggestion"`, and `"Back"` / `"Continue"` controls.
+- **Screen 3 — Shots (`TimelineDirector.jsx`, 860px column):** Title *"Write the shots"*:
+  - **Locked in every shot card:** Displays `CHARACTER`, `WORLD`, `LOOK` (defaulting to *3D Animated Pixar style*), and `LIGHT` in a two-column definition list (`96px minmax(0,1fr)`), toggling to four labelled textareas when `"Edit"` is clicked.
+  - **Constellation Path Shot List:** Segmented filter (`All (25)` | `Story (20)` | `Dance (+5)`) and shot rows connected by a 1px vertical rail and 11px ringed nodes (cyan for story shots, pink `#ff7ab8` for bonus dance prompts). Clicking `"Edit prompt"` expands inline beneath the row with `WHAT HAPPENS`, `CAMERA`, `HOW IT ENDS`, a dashed `FULL 3D ANIMATED PIXAR PROMPT` preview (`Look / Character / World / Light / Camera / Duration / Starts / Scene / Choreography / Ends`), `"Copy prompt"`, and `"Revert to original"`.
+- **Screen 4 — Check (`ContinuityAudit.jsx`, 960px column):** Title *"Check continuity"*:
+  - **Continuity Dial Card:** 200x200 SVG instrument dial with 15 ticks (24° apart, cyan `#7ee8f0` for aligned shots, gold `#e9c98f` with an outer gold dot for shots needing a look), center aligned count in 48px Fraunces, headline (*"13 of 15 shots line up"*), and legend.
+  - **Flagged Shots List:** Lists shots with character detail omissions (e.g., Shot 07 missing copper goggles) or repeated neighbouring camera moves (e.g., Shot 11 repeating Shot 10's dolly move). Clicking `"Review"` opens an inline prompt editor, a dashed `SUGGESTION` box, `"Use suggestion"` (primary), and `"Keep my version"` (ghost), updating the dial and headline live.
+- **Screen 5 — Export (`PromptDeck.jsx`, 760px column):** Title *"Export your prompts"*, primary `"Copy all 15 prompts"` button, `"Video tool"` / `"Editing timeline"` segmented switch, format rows (*Image directing sheet*, *Text-to-video matrix*, *Realtime video dispatcher*), and one-click raw downloads for `JSON`, `TXT`, and `Markdown`.
 
 ## Look and Feel
-- **Aesthetic:** Professional director's console blended with playful, creative energy.
-- **Color Palette:** Deep slate/charcoal background (`#0d1117`, `#161b22`) accented with electric violet/magenta (`#a855f7`), neon cyan (`#06b6d4`), and glowing emerald (`#10b981`) for locked continuity badges.
-- **Typography:** Modern, crisp sans-serif (Inter / Outfit style) with monospace font accents for prompt tokens, camera angles, and timestamps.
+- **Aesthetic:** Deep Field — a calm, focused workspace set against a deep indigo night (`#0b0b20`) with subtle background radial glows, a quiet star field, and top-right orbital rings.
+- **Color Palette:** Deep indigo background (`#0b0b20`), recessed cards (`rgba(20, 18, 46, 0.72)`), inputs (`rgba(10, 10, 31, 0.85)`), primary gradient (`linear-gradient(135deg, #c42882, #6a1fb8)`), pink step accent (`#ff7ab8`), cyan aligned accent (`#7ee8f0`), focus ring (`#00f0ff`), and warm gold (`#e9c98f`) for flagged items.
+- **Typography:** `Fraunces` (600) for display titles, headlines, and dial numerals; `Instrument Sans` (400, 500, 600) for body copy, buttons, and fields; `DM Mono` (400, 500) for uppercase eyebrows, field labels, shot labels, and full-prompt readouts.
 - **Motion Design:** Smooth, satisfying unfolding animations for newly unlocked studio sections, micro-bounces on button clicks, and subtle pulse effects during the continuity audit pass.
 - **Cinematography & Script Reference:** Grounded in industry-standard shot taxonomy from [StudioBinder's Ultimate Guide to Camera Shots](https://www.studiobinder.com/blog/ultimate-guide-to-camera-shots/#dollyshot) (Dolly, Tracking, Crane, Low-Angle Hero, Over-the-Shoulder, Wide Establishing).
 

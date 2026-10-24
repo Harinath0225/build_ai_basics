@@ -53,11 +53,15 @@ func main() {
 	// Health check
 	mux.HandleFunc("/api/health", enableCORS(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
+		cfg := studioAgent.GetConfigStatus()
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"status":        "ok",
-			"service":       "ContinuityStudio Agent Server",
-			"rules":         len(rulesMgr.GetRules()),
-			"chroma_online": vectorMem.IsChromaOnline(),
+			"status":            "ok",
+			"service":           "ContinuityStudio Agent Server",
+			"rules":             len(rulesMgr.GetRules()),
+			"chroma_online":     vectorMem.IsChromaOnline(),
+			"gemini_configured": cfg["gemini_configured"],
+			"active_model":      cfg["active_model"],
+			"available_models":  cfg["available_models"],
 		})
 	}))
 

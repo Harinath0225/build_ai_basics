@@ -21,8 +21,9 @@ An AI video creator or animator producing multi-scene video stories, children's 
 5. The creator gets a ready-to-use production prompt deck to feed into Veo and Suno.
 
 ## Inspiration & Identity
-Focused director's workbench. Clean, structured, and predictable, giving the creator confidence that scene 10 matches scene 1 in character fidelity and atmosphere.
+Focused director's workbench built on the **Deep Field** design system (deep indigo night `#0b0b20`, quiet orbital motifs, Fraunces + Instrument Sans + DM Mono typography, and a 4-step trail: **Story, Sound, Shots, Check** plus **Export**). Clean, structured, and predictable, giving the creator confidence that shot 15 matches shot 1 in character fidelity, world, look, and light.
 References & Industry Standards:
+- **Deep Field Design System:** One idea per screen, editable prompts with instant reset, locked details card (`Character`, `World`, `Look`, `Light`), constellation-path shot rows, and a 15-tick continuity instrument dial.
 - [StudioBinder Ultimate Guide to Camera Shots](https://www.studiobinder.com/blog/ultimate-guide-to-camera-shots/#dollyshot) for cinematography taxonomy (Dolly, Tracking, Low Angle, Crane, Close-Up).
 
 ## Why This Matters to the Learner

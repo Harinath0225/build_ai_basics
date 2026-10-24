@@ -22,7 +22,7 @@ ContinuityStudio is split into two cleanly separated local services with vector 
 ## Stack
 - **Backend Language & Runtime:** Go (Golang 1.27.0). Fast, strongly typed, single-binary compilation, ideal for clean agent service loops.
 - **Vector Memory & Embeddings:** **Chroma DB** (via HTTP REST client on port 8000) with automatic, resilient local vector fallback. Rationale: Real vector database semantic similarity search for drift detection, guaranteed to work offline without blocking development if Chroma isn't running.
-- **AI Agent & LLM Client:** Google Gen AI SDK for Go / Vertex AI client (`cloud.google.com/go/vertexai/genai` or `github.com/google/generative-ai-go/genai`). Rationale: Connects directly to Google Cloud Project Agent Platform / Gemini models. Includes a mock/fallback engine for offline or credential-free hackathon testing.
+- **AI Agent & LLM Client:** Google AI Studio Gemini REST API (`v1beta/models/{model}:generateContent`) with a **resilient multi-model fallback chain** (`gemini-3.6-flash` → `gemini-3.5-flash` → `gemini-3.8-flash` → `gemini-4-argon`). Rationale: Automatically recovers if a deprecated model returns `404` or a high-demand model returns `503`, and includes a deterministic creative fallback engine for offline testing.
 - **Environment & Secrets:** `github.com/joho/godotenv` to load `.env` variables (e.g., `GCP_PROJECT_ID`, `GEMINI_API_KEY`, `CHROMA_URL`). All `.env` files are excluded by `.gitignore`.
 - **Frontend Framework:** React 18+ with Vite. Rationale: Instant HMR, minimal build friction, modern component ecosystem.
 - **Styling & Motion:** Modern CSS + Tailwind CSS utilities with **Framer Motion** (`framer-motion`) for smooth unfolding stage animations and **Lucide React** (`lucide-react`) for studio director icons.
@@ -52,9 +52,9 @@ ContinuityStudio is split into two cleanly separated local services with vector 
 
 ## Look and Feel
 *PRD ref: `prd.md > Look and Feel`*
-- **Palette:** Modern creative studio dark theme. Deep obsidian background (`#090d16`, `#111827`), elevated card surfaces (`#1f2937`), electric purple accents (`#9333ea`), neon cyan highlights (`#06b6d4`), and emerald continuity badges (`#10b981`).
-- **Typography:** Inter / Outfit for headlines and studio UI controls; JetBrains Mono / monospace for prompt tokens, camera shot badges, and duration timestamps.
-- **Motion:** Framer Motion staggered reveals as each production stage unlocks, pulse glows on active audit passes, and spring micro-interactions on button clicks.
+- **Palette (Deep Field):** Deep indigo night background (`#0b0b20`) with three layered radial glows (magenta, violet, cyan), flat hairline-bordered cards (`rgba(20, 18, 46, 0.72)`), recessed inputs (`rgba(10, 10, 31, 0.85)`), primary action gradient (`linear-gradient(135deg, #c42882, #6a1fb8)`), pink step indicator (`#ff7ab8`), cyan aligned ticks (`#7ee8f0`), focus ring (`#00f0ff`), and gold attention badges (`#e9c98f`).
+- **Typography:** `Fraunces` (400, 600) for display titles, section headers, and dial numerals; `Instrument Sans` (400, 500, 600) for body copy, buttons, and inputs; `DM Mono` (400, 500) for uppercase eyebrows, field labels, shot headers, and assembled prompt readouts.
+- **Motifs:** Subtle fixed star field, top-right concentric orbital ellipses, constellation-path vertical rails with cyan ringed nodes on the Shots screen, and a 200x200 15-tick SVG instrument dial on the Check screen.
 
 ## Components
 
@@ -89,6 +89,7 @@ type ProjectRequest struct {
     VisualStyle   string `json:"visual_style"`
     MusicGenre    string `json:"music_genre"`
     IncludeDance  bool   `json:"include_dance"`
+    Model         string `json:"model,omitempty"` // Selected Google AI Studio model
 }
 
 // CharacterAnchor represents the persistent character visual DNA
@@ -101,13 +102,14 @@ type CharacterAnchor struct {
 
 // ScenePrompt represents an individual video + audio slice
 type ScenePrompt struct {
-    SceneNumber int    `json:"scene_number"`
-    TimeRange   string `json:"time_range"`   // e.g. "00:00 - 00:06"
-    CameraAngle string `json:"camera_angle"` // from StudioBinder taxonomy
-    DanceAction string `json:"dance_action"` // choreographic motion if applicable
-    VeoPrompt   string `json:"veo_prompt"`   // ready-to-paste video prompt
-    SunoPrompt  string `json:"suno_prompt"`  // synchronized lyrics / audio prompt
-    Status      string `json:"status"`       // "verified", "patched"
+    SceneNumber   int    `json:"scene_number"`
+    TimeRange     string `json:"time_range"`     // e.g. "00:00 - 00:06"
+    CameraAngle   string `json:"camera_angle"`   // from StudioBinder taxonomy
+    DanceAction   string `json:"dance_action"`   // choreographic motion if applicable
+    VisualSummary string `json:"visual_summary"` // scene action synopsis
+    VeoPrompt     string `json:"veo_prompt"`     // ready-to-paste video prompt
+    SunoPrompt    string `json:"suno_prompt"`    // synchronized lyrics / audio prompt
+    Status        string `json:"status"`         // "pending", "verified", "patched"
 }
 
 // ContinuityRule represents an autonomous constraint stored in memory/disk
@@ -162,11 +164,11 @@ build_ai_basics/
 ```
 
 ## External Services and Dependencies
-1. **Google Cloud Vertex AI / Gemini API:**
-   - Model: `gemini-1.5-flash` or `gemini-2.0-flash` (via official Go SDK).
-   - Key: `GEMINI_API_KEY` or `GCP_PROJECT_ID` with Application Default Credentials in `.env`.
-   - Docs: [Google GenAI Go SDK](https://github.com/google/generative-ai-go) / [Vertex AI Go SDK](https://cloud.google.com/vertexai/docs).
-   - Fallback: Offline deterministic mock generator built into the Go backend so the studio works seamlessly even without an active cloud bill or offline.
+1. **Google AI Studio / Gemini API:**
+   - Default Model: `gemini-3.6-flash` with automatic fallback chain (`gemini-3.6-flash` → `gemini-3.5-flash` → `gemini-3.8-flash` → `gemini-4-argon`).
+   - Key: `GEMINI_API_KEY` in `backend/.env`.
+   - Docs: [Google Gemini API Docs](https://ai.google.dev/gemini-api/docs/get-started).
+   - Fallback: Resilient multi-model cascade on `404`/`503` plus an offline deterministic generator built into the Go backend so the studio works seamlessly even offline.
 2. **Local Chroma DB (Port 8000):**
    - API: Chroma HTTP REST v1 (`/api/v1/collections`).
    - Fallback: Automatic in-process vector/JSON storage if Chroma HTTP server is not detected.

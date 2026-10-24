@@ -1,233 +1,376 @@
-import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Database, Wrench, RefreshCw, CheckCircle2, AlertTriangle, Cpu } from 'lucide-react';
+import React, { useState } from 'react';
 
-export default function ContinuityAudit({
-  concept,
-  onAuditComplete
-}) {
-  const [memoryStatus, setMemoryStatus] = useState(null);
-  const [activeRules, setActiveRules] = useState([]);
-  const [isAuditing, setIsAuditing] = useState(false);
-  const [auditResult, setAuditResult] = useState(null);
-  const [error, setError] = useState(null);
+function StatusIcon({ status }) {
+  if (status === 'aligned') {
+    return (
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#7ee8f0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <circle cx="9" cy="9" r="7" />
+        <path d="M6 9.2l2.1 2.1 4.2-4.4" />
+      </svg>
+    );
+  }
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#e9c98f" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M9 1.8l7.2 7.2L9 16.2 1.8 9z" />
+      <path d="M9 6v3.4M9 11.6v.1" />
+    </svg>
+  );
+}
 
-  // Fetch memory & rules status on mount
-  useEffect(() => {
-    fetchStatus();
-  }, []);
-
-  const fetchStatus = async () => {
-    try {
-      const [memRes, rulesRes] = await Promise.all([
-        fetch('http://localhost:8080/api/memory/status'),
-        fetch('http://localhost:8080/api/rules')
-      ]);
-
-      if (memRes.ok) {
-        const memData = await memRes.json();
-        setMemoryStatus(memData);
-      }
-      if (rulesRes.ok) {
-        const rulesData = await rulesRes.json();
-        setActiveRules(rulesData);
-      }
-    } catch (e) {
-      console.warn('Memory status fetch failed:', e);
-    }
-  };
-
-  const handleRunAudit = async () => {
-    if (!concept) return;
-    setIsAuditing(true);
-    setError(null);
-
-    try {
-      const res = await fetch('http://localhost:8080/api/audit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(concept)
-      });
-
-      if (!res.ok) {
-        throw new Error(`Audit returned status ${res.status}`);
-      }
-
-      const result = await res.json();
-      setAuditResult(result);
-      if (result.updated_rules) {
-        setActiveRules(result.updated_rules);
-      }
-      if (onAuditComplete) {
-        onAuditComplete(result);
-      }
-    } catch (err) {
-      console.error('Audit failed:', err);
-      setError('Audit pass encountered an issue connecting to the Go backend.');
-    } finally {
-      setIsAuditing(false);
-    }
-  };
+function ContinuityDial({ shots, flaggedMap, totalShots }) {
+  const count = shots.length || 15;
+  const alignedCount = shots.filter((s) => !flaggedMap[s.number] || flaggedMap[s.number].resolved).length;
 
   return (
-    <section className="studio-card animate-unfold" style={{ marginBottom: '32px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <ShieldCheck size={20} color="#10b981" />
-          <h2 style={{ fontSize: '18px', margin: 0 }}>Step 4: Vector Memory & Autonomous Continuity Audit</h2>
-        </div>
+    <div style={{ position: 'relative', width: '200px', height: '200px', flexShrink: 0 }}>
+      <svg width="200" height="200" viewBox="0 0 200 200" aria-hidden="true">
+        {/* Faint tilted orbital ellipses behind center */}
+        <ellipse
+          cx="100"
+          cy="100"
+          rx="54"
+          ry="20"
+          transform="rotate(-28 100 100)"
+          stroke="rgba(255, 255, 255, 0.09)"
+          strokeWidth="1"
+          fill="none"
+        />
+        <ellipse
+          cx="100"
+          cy="100"
+          rx="54"
+          ry="20"
+          transform="rotate(32 100 100)"
+          stroke="rgba(255, 255, 255, 0.09)"
+          strokeWidth="1"
+          fill="none"
+        />
 
-        {/* Vector Memory Engine Badge */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {memoryStatus?.chroma_online ? (
-            <span className="badge badge-cyan">
-              <Database size={12} /> Chroma DB Vector Server (Port 8000)
-            </span>
-          ) : (
-            <span className="badge badge-purple" title="Embedded vector cosine similarity engine active">
-              <Cpu size={12} /> Local Vector Memory Engine (Port 8000 Ready)
-            </span>
-          )}
-          <span className="badge badge-emerald">
-            {activeRules.length} Active Rules
-          </span>
-        </div>
-      </div>
+        {/* 15 ticks around (100, 100) */}
+        {shots.map((shot, i) => {
+          const deg = i * (360 / count);
+          const rad = ((deg - 90) * Math.PI) / 180;
+          const x1 = 100 + 76 * Math.cos(rad);
+          const y1 = 100 + 76 * Math.sin(rad);
+          const x2 = 100 + 92 * Math.cos(rad);
+          const y2 = 100 + 92 * Math.sin(rad);
+          const dotX = 100 + 100 * Math.cos(rad);
+          const dotY = 100 + 100 * Math.sin(rad);
 
-      {/* Persistent Rule Storage Card */}
-      <div style={{ 
-        background: 'rgba(0,0,0,0.3)', 
-        border: '1px solid var(--border-subtle)', 
-        borderRadius: '12px', 
-        padding: '18px',
-        marginBottom: '24px'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-          <div style={{ fontSize: '13px', fontWeight: 700, color: '#f8fafc', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Database size={14} color="#a855f7" />
-            <span>Persistent Rules Stored on Disk (`backend/data/rules.json`)</span>
-          </div>
-          <span style={{ fontSize: '12px', color: 'var(--text-dim)' }}>
-            Autonomously Patched & Dynamically Reloaded
-          </span>
-        </div>
+          const flagInfo = flaggedMap[shot.number];
+          const needsLook = flagInfo && !flagInfo.resolved;
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {activeRules.map((r, idx) => (
-            <div key={idx} style={{ 
-              display: 'flex', 
-              alignItems: 'flex-start', 
-              gap: '10px', 
-              fontSize: '13px', 
-              background: 'rgba(255,255,255,0.02)', 
-              padding: '8px 12px', 
-              borderRadius: '6px',
-              border: '1px solid rgba(255,255,255,0.04)' 
-            }}>
-              <span className="badge badge-purple" style={{ padding: '2px 6px', fontSize: '11px', textTransform: 'uppercase' }}>
-                {r.category}
-              </span>
-              <span style={{ color: '#cbd5e1', flex: 1 }}>{r.constraint}</span>
-              <span className="mono" style={{ fontSize: '11px', color: 'var(--text-dim)' }}>
-                v{r.version}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
+          return (
+            <g key={shot.number}>
+              <line
+                x1={x1.toFixed(2)}
+                y1={y1.toFixed(2)}
+                x2={x2.toFixed(2)}
+                y2={y2.toFixed(2)}
+                stroke={needsLook ? '#e9c98f' : '#7ee8f0'}
+                strokeWidth="3"
+                strokeLinecap="round"
+              />
+              {needsLook && (
+                <circle
+                  cx={dotX.toFixed(2)}
+                  cy={dotY.toFixed(2)}
+                  r="3.5"
+                  fill="#e9c98f"
+                />
+              )}
+            </g>
+          );
+        })}
+      </svg>
 
-      {/* Audit Action Banner */}
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        background: 'rgba(16, 185, 129, 0.06)', 
-        border: '1px solid rgba(16, 185, 129, 0.2)', 
-        borderRadius: '12px', 
-        padding: '16px 20px',
-        flexWrap: 'wrap',
-        gap: '14px'
-      }}>
-        <div>
-          <div style={{ fontSize: '15px', fontWeight: 700, color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <ShieldCheck size={18} color="#34d399" />
-            <span>Continuity Drift Evaluator</span>
-          </div>
-          <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px' }}>
-            Audits character DNA, lighting key, and dance anatomy across all {concept?.scenes?.length || 0} scenes.
-          </div>
-        </div>
-
-        <button 
-          onClick={handleRunAudit}
-          disabled={isAuditing}
-          className="btn-primary"
-          style={{ 
-            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-            boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)'
+      {/* Center Readout */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          textAlign: 'center',
+          pointerEvents: 'none',
+        }}
+      >
+        <span
+          style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: '48px',
+            fontWeight: 600,
+            lineHeight: 1,
+            color: 'var(--text-main)',
           }}
         >
-          {isAuditing ? (
-            <>
-              <RefreshCw size={16} className="animate-spin" />
-              <span>Scanning Vector Memory & Auditing Prompts...</span>
-            </>
-          ) : (
-            <>
-              <CheckCircle2 size={16} />
-              <span>Run Autonomous Continuity Audit</span>
-            </>
-          )}
-        </button>
+          {alignedCount}
+        </span>
+        <span
+          style={{
+            fontFamily: 'var(--font-sans)',
+            fontSize: '13px',
+            color: 'var(--text-muted)',
+            marginTop: '4px',
+          }}
+        >
+          of {totalShots} shots
+        </span>
+      </div>
+    </div>
+  );
+}
+
+export default function ContinuityAudit({
+  projectTitle,
+  shots,
+  flaggedItems,
+  onUpdateShotPrompt,
+  onAcceptSuggestion,
+  onKeepVersion,
+  onReviewAllShots,
+  onExportPrompts,
+}) {
+  const [openShotNum, setOpenShotNum] = useState(null);
+
+  const flaggedMap = {};
+  flaggedItems.forEach((item) => {
+    flaggedMap[item.shotNumber] = item;
+  });
+
+  const unresolvedCount = flaggedItems.filter((f) => !f.resolved).length;
+  const alignedCount = shots.length - unresolvedCount;
+
+  return (
+    <section className="df-col-960" aria-labelledby="check-heading">
+      {/* Top Header Row */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-end',
+          flexWrap: 'wrap',
+          gap: '20px',
+          marginBottom: '36px',
+        }}
+      >
+        <div>
+          <p className="df-eyebrow">STEP 4 OF 4</p>
+          <h1 id="check-heading" className="df-title-lg">
+            Check continuity
+          </h1>
+          <p className="df-meta" style={{ marginTop: '10px' }}>
+            {projectTitle} &nbsp;·&nbsp; {shots.length} shots
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className="df-btn-ghost"
+            onClick={onReviewAllShots}
+          >
+            Review all shots
+          </button>
+
+          <button
+            type="button"
+            className="df-btn-primary"
+            onClick={onExportPrompts}
+          >
+            <span>Export prompts</span>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M3 8h10M9 4l4 4-4 4" />
+            </svg>
+          </button>
+        </div>
       </div>
 
-      {/* Audit Results Panel */}
-      {auditResult && (
-        <div style={{ marginTop: '20px', animation: 'slideDownFade 0.3s ease forwards' }}>
-          <div style={{ 
-            background: 'rgba(15, 23, 42, 0.8)', 
-            border: '1px solid rgba(16, 185, 129, 0.4)', 
-            borderRadius: '12px', 
-            padding: '20px',
-            boxShadow: 'var(--shadow-emerald)'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <CheckCircle2 size={20} color="#34d399" />
-                <span style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff' }}>
-                  Continuity Health: {auditResult.verified_count} / {auditResult.total_scenes} Scenes Verified (100% Locked)
-                </span>
-              </div>
-              <span className="badge badge-emerald">
-                ● Temporal Continuity Confirmed
-              </span>
-            </div>
+      {/* Dial Summary Card */}
+      <div
+        className="df-card"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '36px',
+          flexWrap: 'wrap',
+          marginBottom: '44px',
+        }}
+      >
+        <ContinuityDial
+          shots={shots}
+          flaggedMap={flaggedMap}
+          totalShots={shots.length}
+        />
 
-            {/* Event Log & Autonomous Patch Events */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {auditResult.patches_applied?.length > 0 && (
-                <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '8px', padding: '10px 14px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 700, color: '#fbbf24', marginBottom: '4px' }}>
-                    <Wrench size={14} />
-                    <span>Autonomous Self-Patch Events:</span>
-                  </div>
-                  {auditResult.patches_applied.map((p, idx) => (
-                    <div key={idx} style={{ fontSize: '12px', color: '#fef3c7', marginLeft: '20px' }}>
-                      • {p}
-                    </div>
-                  ))}
-                </div>
-              )}
+        <div style={{ flex: '1 1 320px' }}>
+          <h2 className="df-card-headline">
+            {alignedCount} of {shots.length} shots line up
+          </h2>
+          <p style={{ fontSize: '15px', color: 'var(--text-soft)', lineHeight: 1.5, marginTop: '10px' }}>
+            {unresolvedCount > 0
+              ? `We compared each prompt with your locked details and with the shots on either side. ${unresolvedCount} ${unresolvedCount === 1 ? 'needs' : 'need'} a look.`
+              : 'We compared each prompt with your locked details and with the shots on either side. Every shot lines up across the film.'}
+          </p>
 
-              {auditResult.audit_notes?.map((note, idx) => (
-                <div key={idx} style={{ fontSize: '13px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ color: '#34d399' }}>✓</span>
-                  <span>{note}</span>
-                </div>
-              ))}
-            </div>
+          <div style={{ height: '1px', background: 'var(--line-hairline)', margin: '20px 0 16px' }} />
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap', fontSize: '13px', color: 'var(--text-muted)' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ width: '10px', height: '2px', borderRadius: '2px', background: '#7ee8f0' }} aria-hidden="true" />
+              <span>Lines up</span>
+            </span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ width: '10px', height: '2px', borderRadius: '2px', background: '#e9c98f' }} aria-hidden="true" />
+              <span>Needs a look</span>
+            </span>
           </div>
         </div>
-      )}
+      </div>
+
+      {/* Flagged Shots List */}
+      <div>
+        <h2 className="df-headline-md" style={{ marginBottom: '16px' }}>
+          Flagged shots
+        </h2>
+
+        <div>
+          {flaggedItems.map((item) => {
+            const shotIndex = shots.findIndex((s) => s.number === item.shotNumber);
+            const shot = shots[shotIndex];
+            if (!shot) return null;
+
+            const shotNumStr = String(shot.number).padStart(2, '0');
+            const isOpen = openShotNum === shot.number;
+
+            return (
+              <div key={shot.number} className="df-list-row">
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: '16px 24px',
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <div style={{ flex: '1 1 320px' }}>
+                    <div
+                      style={{
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '12px',
+                        letterSpacing: '0.08em',
+                        textTransform: 'uppercase',
+                        color: 'var(--text-muted)',
+                        marginBottom: '6px',
+                      }}
+                    >
+                      SHOT {shotNumStr}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: '16px',
+                        fontWeight: 600,
+                        color: 'var(--text-main)',
+                        marginBottom: '6px',
+                      }}
+                    >
+                      {item.reason}
+                    </div>
+                    <p
+                      className={isOpen ? '' : 'df-clamp-2'}
+                      style={{ fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.5 }}
+                    >
+                      {shot.whatHappens}
+                    </p>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', fontSize: '14px', fontWeight: 500 }}>
+                      <StatusIcon status={item.resolved ? 'aligned' : 'flagged'} />
+                      <span style={{ color: item.resolved ? '#7ee8f0' : '#e9c98f' }}>
+                        {item.resolved ? 'Lines up' : 'Needs a look'}
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="df-btn-ghost"
+                      aria-expanded={isOpen}
+                      aria-label={`Review shot ${shotNumStr}`}
+                      onClick={() => setOpenShotNum(isOpen ? null : shot.number)}
+                    >
+                      {isOpen ? (item.resolved ? 'Done' : 'Close') : 'Review'}
+                    </button>
+                  </div>
+                </div>
+
+                {isOpen && (
+                  <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid var(--line-hairline)' }}>
+                    <div style={{ marginBottom: '16px' }}>
+                      <label htmlFor={`review-prompt-${shot.number}`} className="df-label">
+                        SHOT {shotNumStr} PROMPT
+                      </label>
+                      <textarea
+                        id={`review-prompt-${shot.number}`}
+                        className="df-textarea df-textarea-dense"
+                        rows={2}
+                        value={shot.whatHappens}
+                        onChange={(e) => onUpdateShotPrompt(shotIndex, e.target.value)}
+                      />
+                    </div>
+
+                    <div className="df-dashed-box" style={{ marginBottom: '16px' }}>
+                      <span className="df-label" style={{ marginBottom: '6px' }}>
+                        SUGGESTION
+                      </span>
+                      <p style={{ fontSize: '15px', color: 'var(--text-soft)', lineHeight: 1.55 }}>
+                        {item.suggestedCamera
+                          ? `[Camera: ${item.suggestedCamera}] ${item.suggestion}`
+                          : item.suggestion}
+                      </p>
+                    </div>
+
+                    {!item.resolved ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          className="df-btn-primary df-btn-inline"
+                          onClick={() => onAcceptSuggestion(item.shotNumber)}
+                        >
+                          Use suggestion
+                        </button>
+                        <button
+                          type="button"
+                          className="df-btn-ghost"
+                          onClick={() => {
+                            onKeepVersion(item.shotNumber);
+                            setOpenShotNum(null);
+                          }}
+                        >
+                          Keep my version
+                        </button>
+                      </div>
+                    ) : (
+                      <div>
+                        <button
+                          type="button"
+                          className="df-btn-ghost"
+                          onClick={() => setOpenShotNum(null)}
+                        >
+                          Done
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </section>
   );
 }

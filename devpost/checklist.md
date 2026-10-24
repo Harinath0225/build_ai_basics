@@ -72,4 +72,6 @@ Activity mode: [to be recorded upon completion]
 
 ## Revisions
 
-- Configurable `GEMINI_MODEL` added to `.env` — enables switching between models (e.g. `gemini-1.5-flash`, `gemini-1.5-pro`, `gemini-2.0-flash`) without code changes.
+- Configurable `GEMINI_MODEL` added to `.env` — updated default to `gemini-3.6-flash` with an automatic multi-model fallback cascade (`gemini-3.6-flash` → `gemini-3.5-flash` → `gemini-3.8-flash` → `gemini-4-argon`) in `backend/internal/agent/agent.go` so deprecated (`404`) or rate-limited (`503`) models seamlessly fail over.
+- Regenerated all screens to implement the **Deep Field** design system — 5 fluid screens (**Story**, **Sound**, **Shots**, **Check**, **Export**) linked by the header step trail, featuring Fraunces + Instrument Sans + DM Mono typography, deep indigo `#0b0b20` background with orbital motifs, the `Locked in every shot` (`Character`, `World`, `Look`, `Light`) definition card, Constellation Path shot rows with inline full-prompt assembly (`Look / Character / World / Light / Camera / Starts / Scene / Ends`), the 200x200 SVG Continuity Dial, and multi-format prompt export (`CSV`, `JSON`, `TXT`, `Markdown`).
+- Added `EXPECTED VIDEO LENGTH` (e.g., 2 mins / 120s), `SECS GENERATED PER SHOT` (e.g., 6s → 20 story video prompts), and `ADDITIONAL DANCE PROMPTS` (e.g., +5 bonus dance prompts = 25 total 3D Animated Pixar prompts + duration-matched Suno music prompt & lyrics).

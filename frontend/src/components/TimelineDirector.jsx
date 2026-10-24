@@ -1,227 +1,383 @@
-import React from 'react';
-import { Camera, User, Sun, Video, Music, Activity, ExternalLink, Sliders } from 'lucide-react';
+import React, { useState } from 'react';
 
-const STUDIO_BINDER_SHOTS = [
-  "Wide Establishing Shot",
-  "Low-Angle Hero Shot",
-  "Dolly In Tracking Shot",
-  "Tracking Shot",
-  "Crane / High-Angle Dynamic Shot",
-  "Close-Up Expression Shot",
-  "Over-The-Shoulder Dynamic Shot"
-];
+export function assembleShotPrompt(locked, shots, index) {
+  const shot = shots[index];
+  if (!shot) return '';
+  const starts =
+    shot.isDance
+      ? 'Rhythmic chorus cut / dance break'
+      : index === 0
+      ? 'Opening shot'
+      : shots[index - 1]?.howItEnds || 'Continues from previous shot';
+
+  const lines = [
+    `Look: ${locked.look}`,
+    `Character: ${locked.character}`,
+    `World: ${locked.world}`,
+    `Light: ${locked.light}`,
+    `Camera: ${shot.camera}`,
+    `Duration: ${shot.timeRange || '6s'}`,
+    `Starts: ${starts}`,
+    `Scene: ${shot.whatHappens}`,
+  ];
+  if (shot.danceMove) {
+    lines.push(`Choreography: ${shot.danceMove}`);
+  }
+  lines.push(`Ends: ${shot.howItEnds}`);
+  return lines.join('\n');
+}
 
 export default function TimelineDirector({
-  concept,
-  onUpdateScene,
-  visualStyle,
-  includeDance
+  locked,
+  onChangeLocked,
+  shots,
+  initialShots,
+  storyShotCount,
+  bonusDanceCount,
+  onUpdateShot,
+  onRevertShot,
+  showAllShots,
+  onToggleShowAll,
+  onBack,
+  onCheckContinuity,
 }) {
-  if (!concept || !concept.scenes) return null;
+  const [isEditingLocked, setIsEditingLocked] = useState(false);
+  const [openShotNumber, setOpenShotNumber] = useState(null);
+  const [copiedNumber, setCopiedNumber] = useState(null);
+  const [filterTab, setFilterTab] = useState('all'); // 'all' | 'story' | 'dance'
 
-  const handleAngleChange = async (index, newAngle) => {
-    const sceneToUpdate = { ...concept.scenes[index], camera_angle: newAngle };
+  const filteredShots = shots.filter((s) => {
+    if (filterTab === 'story') return !s.isDance;
+    if (filterTab === 'dance') return !!s.isDance;
+    return true;
+  });
 
-    try {
-      const res = await fetch('http://localhost:8080/api/direct', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          scene: sceneToUpdate,
-          character: concept.character_anchor,
-          visual_style: visualStyle || concept.visual_style,
-          include_dance: includeDance
-        })
-      });
+  const visibleShots =
+    showAllShots || filterTab === 'dance'
+      ? filteredShots
+      : filteredShots.slice(0, 4);
 
-      if (res.ok) {
-        const updated = await res.json();
-        onUpdateScene(index, updated);
-      }
-    } catch (e) {
-      console.error('Failed to update scene direction:', e);
-      // Local reactive update fallback
-      onUpdateScene(index, sceneToUpdate);
-    }
-  };
-
-  const handleDanceToggle = async (index) => {
-    const currentAction = concept.scenes[index].dance_action;
-    const newAction = currentAction ? "" : "Realistic expressive contemporary footwork and syncopated torso groove,";
-    const sceneToUpdate = { ...concept.scenes[index], dance_action: newAction };
-
-    try {
-      const res = await fetch('http://localhost:8080/api/direct', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          scene: sceneToUpdate,
-          character: concept.character_anchor,
-          visual_style: visualStyle || concept.visual_style,
-          include_dance: true
-        })
-      });
-
-      if (res.ok) {
-        const updated = await res.json();
-        onUpdateScene(index, updated);
-      }
-    } catch (e) {
-      onUpdateScene(index, sceneToUpdate);
-    }
+  const handleCopyPrompt = (shotNumber) => {
+    const idx = shots.findIndex((s) => s.number === shotNumber);
+    if (idx === -1) return;
+    const fullText = assembleShotPrompt(locked, shots, idx);
+    navigator.clipboard.writeText(fullText);
+    setCopiedNumber(shotNumber);
+    setTimeout(() => setCopiedNumber(null), 1800);
   };
 
   return (
-    <section className="studio-card animate-unfold" style={{ marginBottom: '32px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <Camera size={20} color="#a855f7" />
-          <h2 style={{ fontSize: '18px', margin: 0 }}>Step 3: Character DNA & Director Timeline</h2>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <a 
-            href="https://www.studiobinder.com/blog/ultimate-guide-to-camera-shots/#dollyshot" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="badge badge-purple"
-            style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}
-          >
-            <span>StudioBinder Shot Taxonomy</span>
-            <ExternalLink size={11} />
-          </a>
-        </div>
+    <section className="df-col-860" aria-labelledby="shots-heading">
+      {/* Page Intro */}
+      <div style={{ marginBottom: '36px' }}>
+        <p className="df-eyebrow">
+          STEP 3 OF 4 &nbsp;·&nbsp; {storyShotCount} STORY PROMPTS + {bonusDanceCount} DANCE PROMPTS
+        </p>
+        <h1 id="shots-heading" className="df-title-xl">
+          Write the shots
+        </h1>
+        <p className="df-intro">
+          3D Animated Pixar-style prompts for every scene plus bonus dance prompts. We keep the look and the characters the same in all of them.
+        </p>
       </div>
 
-      {/* Persistent Character Anchor Card */}
-      <div style={{ 
-        background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(6, 182, 212, 0.08) 100%)', 
-        border: '1px solid rgba(168, 85, 247, 0.3)', 
-        borderRadius: '14px', 
-        padding: '20px',
-        marginBottom: '28px',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <User size={18} color="#c084fc" />
-            <span style={{ fontSize: '15px', fontWeight: 700, color: '#ffffff' }}>
-              Persistent Character Anchor: {concept.character_anchor?.name}
+      {/* Locked in every shot Card */}
+      <div className="df-card-compact" style={{ marginBottom: '36px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', flexWrap: 'wrap' }}>
+          <div>
+            <h2 className="df-headline-sm">Locked in every shot</h2>
+            <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '4px' }}>
+              Change these once and every story and dance shot follows.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="df-btn-ghost"
+            aria-expanded={isEditingLocked}
+            onClick={() => setIsEditingLocked((prev) => !prev)}
+            style={{ height: '40px', padding: '0 16px' }}
+          >
+            {isEditingLocked ? 'Done' : 'Edit'}
+          </button>
+        </div>
+
+        {!isEditingLocked ? (
+          <dl className="df-locked-dl">
+            <dt className="df-locked-dt">CHARACTER</dt>
+            <dd className="df-locked-dd">{locked.character}</dd>
+
+            <dt className="df-locked-dt">WORLD</dt>
+            <dd className="df-locked-dd">{locked.world}</dd>
+
+            <dt className="df-locked-dt">LOOK</dt>
+            <dd className="df-locked-dd">{locked.look}</dd>
+
+            <dt className="df-locked-dt">LIGHT</dt>
+            <dd className="df-locked-dd">{locked.light}</dd>
+          </dl>
+        ) : (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', marginTop: '20px' }}>
+            <div style={{ flex: '1 1 300px' }}>
+              <label htmlFor="locked-character" className="df-label">CHARACTER</label>
+              <textarea
+                id="locked-character"
+                className="df-textarea df-textarea-dense"
+                rows={2}
+                value={locked.character}
+                onChange={(e) => onChangeLocked('character', e.target.value)}
+              />
+            </div>
+            <div style={{ flex: '1 1 300px' }}>
+              <label htmlFor="locked-world" className="df-label">WORLD</label>
+              <textarea
+                id="locked-world"
+                className="df-textarea df-textarea-dense"
+                rows={2}
+                value={locked.world}
+                onChange={(e) => onChangeLocked('world', e.target.value)}
+              />
+            </div>
+            <div style={{ flex: '1 1 300px' }}>
+              <label htmlFor="locked-look" className="df-label">LOOK</label>
+              <textarea
+                id="locked-look"
+                className="df-textarea df-textarea-dense"
+                rows={2}
+                value={locked.look}
+                onChange={(e) => onChangeLocked('look', e.target.value)}
+              />
+            </div>
+            <div style={{ flex: '1 1 300px' }}>
+              <label htmlFor="locked-light" className="df-label">LIGHT</label>
+              <textarea
+                id="locked-light"
+                className="df-textarea df-textarea-dense"
+                rows={2}
+                value={locked.light}
+                onChange={(e) => onChangeLocked('light', e.target.value)}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Shots Section */}
+      <div style={{ marginBottom: '36px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', paddingBottom: '14px', borderBottom: '1px solid var(--line-hairline)', flexWrap: 'wrap', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '14px', flexWrap: 'wrap' }}>
+            <h2 className="df-headline-md">Shots</h2>
+            <span className="df-meta">
+              Showing {visibleShots.length} of {filteredShots.length}
             </span>
           </div>
-          <span className="badge badge-emerald">
-            ● Identity Locked Across All Scenes
-          </span>
+
+          {bonusDanceCount > 0 && (
+            <div className="df-segmented" role="group" aria-label="Filter shots">
+              <button
+                type="button"
+                className="df-segment-btn"
+                style={{ height: '36px', padding: '0 14px', fontSize: '13px' }}
+                aria-pressed={filterTab === 'all'}
+                onClick={() => setFilterTab('all')}
+              >
+                All ({shots.length})
+              </button>
+              <button
+                type="button"
+                className="df-segment-btn"
+                style={{ height: '36px', padding: '0 14px', fontSize: '13px' }}
+                aria-pressed={filterTab === 'story'}
+                onClick={() => setFilterTab('story')}
+              >
+                Story ({storyShotCount})
+              </button>
+              <button
+                type="button"
+                className="df-segment-btn"
+                style={{ height: '36px', padding: '0 14px', fontSize: '13px' }}
+                aria-pressed={filterTab === 'dance'}
+                onClick={() => setFilterTab('dance')}
+              >
+                Dance (+{bonusDanceCount})
+              </button>
+            </div>
+          )}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-          <div>
-            <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>
-              Visual DNA (Costume & Anatomy)
-            </div>
-            <p style={{ fontSize: '13px', color: '#f1f5f9', background: 'rgba(0,0,0,0.3)', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
-              {concept.character_anchor?.visual_dna}
-            </p>
-          </div>
-          <div>
-            <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>
-              Lighting Key & Color Palette
-            </div>
-            <p style={{ fontSize: '13px', color: '#f1f5f9', background: 'rgba(0,0,0,0.3)', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
-              {concept.character_anchor?.lighting_key}
-            </p>
-          </div>
+        <div>
+          {visibleShots.map((shot, vIdx) => {
+            const masterIdx = shots.findIndex((s) => s.number === shot.number);
+            const shotNumStr = String(shot.number).padStart(2, '0');
+            const isOpen = openShotNumber === shot.number;
+            const orig = initialShots[masterIdx];
+            const isModified = orig && (
+              shot.whatHappens !== orig.whatHappens ||
+              shot.camera !== orig.camera ||
+              shot.howItEnds !== orig.howItEnds ||
+              shot.danceMove !== orig.danceMove
+            );
+
+            let railClass = 'df-shot-rail df-shot-rail-mid';
+            if (vIdx === 0) railClass = 'df-shot-rail df-shot-rail-first';
+            if (vIdx === visibleShots.length - 1) railClass = 'df-shot-rail df-shot-rail-last';
+
+            return (
+              <div key={shot.number} className="df-shot-row">
+                <span className={railClass} aria-hidden="true" />
+                <span
+                  className="df-shot-node"
+                  aria-hidden="true"
+                  style={{
+                    top: '31px',
+                    borderColor: shot.isDance ? '#ff7ab8' : 'var(--accent-cyan)',
+                  }}
+                />
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px 20px', flexWrap: 'wrap' }}>
+                  <div style={{ flex: '1 1 280px' }}>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', letterSpacing: '0.08em', textTransform: 'uppercase', color: shot.isDance ? '#ff7ab8' : 'var(--text-muted)', marginBottom: '5px' }}>
+                      {shot.isDance
+                        ? `DANCE PROMPT ${String(shot.danceIndex || 1).padStart(2, '0')} (SHOT ${shotNumStr})  ·  ${shot.camera}`
+                        : `SHOT ${shotNumStr}  ·  ${shot.timeRange || ''}  ·  ${shot.camera}`}
+                    </div>
+                    <p className={isOpen ? '' : 'df-clamp-2'} style={{ fontSize: '15px', color: 'var(--text-main)', lineHeight: 1.5 }}>
+                      {shot.whatHappens}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="df-btn-ghost"
+                    aria-label={`${isOpen ? 'Close' : 'Edit'} prompt for shot ${shotNumStr}`}
+                    aria-expanded={isOpen}
+                    onClick={() => setOpenShotNumber(isOpen ? null : shot.number)}
+                  >
+                    {!isOpen && (
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M2.5 13.5l.7-3L10.8 3a1.4 1.4 0 0 1 2 0l.2.2a1.4 1.4 0 0 1 0 2L5.5 12.8z" />
+                      </svg>
+                    )}
+                    <span>{isOpen ? 'Close' : 'Edit prompt'}</span>
+                  </button>
+                </div>
+
+                {isOpen && (
+                  <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid var(--line-hairline)' }}>
+                    <div style={{ marginBottom: '16px' }}>
+                      <label htmlFor={`shot-scene-${shot.number}`} className="df-label">
+                        WHAT HAPPENS (3D PIXAR SCENE ACTION)
+                      </label>
+                      <textarea
+                        id={`shot-scene-${shot.number}`}
+                        className="df-textarea df-textarea-dense"
+                        rows={2}
+                        value={shot.whatHappens}
+                        onChange={(e) => onUpdateShot(masterIdx, { whatHappens: e.target.value })}
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', marginBottom: '18px' }}>
+                      <div style={{ flex: '1 1 240px' }}>
+                        <label htmlFor={`shot-camera-${shot.number}`} className="df-label">
+                          CAMERA
+                        </label>
+                        <input
+                          id={`shot-camera-${shot.number}`}
+                          type="text"
+                          className="df-input"
+                          value={shot.camera}
+                          onChange={(e) => onUpdateShot(masterIdx, { camera: e.target.value })}
+                        />
+                      </div>
+
+                      <div style={{ flex: '1 1 240px' }}>
+                        <label htmlFor={`shot-ends-${shot.number}`} className="df-label">
+                          HOW IT ENDS
+                        </label>
+                        <input
+                          id={`shot-ends-${shot.number}`}
+                          type="text"
+                          className="df-input"
+                          value={shot.howItEnds}
+                          onChange={(e) => onUpdateShot(masterIdx, { howItEnds: e.target.value })}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="df-dashed-box" style={{ marginBottom: '16px' }}>
+                      <span className="df-label" style={{ marginBottom: '8px' }}>
+                        FULL 3D ANIMATED PIXAR PROMPT
+                      </span>
+                      <div className="df-readout">
+                        {assembleShotPrompt(locked, shots, masterIdx)}
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        className="df-btn-primary df-btn-inline"
+                        onClick={() => handleCopyPrompt(shot.number)}
+                      >
+                        <span>{copiedNumber === shot.number ? 'Copied prompt' : 'Copy prompt'}</span>
+                      </button>
+
+                      {isModified && (
+                        <button
+                          type="button"
+                          className="df-btn-text"
+                          onClick={() => onRevertShot(masterIdx)}
+                        >
+                          Revert to original
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
+
+        {filterTab !== 'dance' && filteredShots.length > 4 && (
+          <div style={{ marginTop: '14px' }}>
+            <button
+              type="button"
+              className="df-btn-text"
+              onClick={onToggleShowAll}
+            >
+              <span>{showAllShots ? 'Show first 4 shots' : `See all ${filteredShots.length} shots`}</span>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M3 8h10M9 4l4 4-4 4" />
+              </svg>
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Multi-Scene Timeline Cards */}
-      <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '16px', color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <Sliders size={16} color="#06b6d4" />
-        <span>Paced Scene Timeline ({concept.scenes.length} Continuous Shots)</span>
-      </h3>
+      {/* Bottom Navigation */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+        <button
+          type="button"
+          className="df-btn-ghost"
+          onClick={onBack}
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M13 8H3M7 4L3 8l4 4" />
+          </svg>
+          <span>Back</span>
+        </button>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        {concept.scenes.map((scene, idx) => (
-          <div 
-            key={idx} 
-            style={{ 
-              background: 'rgba(15, 23, 42, 0.7)', 
-              border: '1px solid var(--border-subtle)', 
-              borderRadius: '12px', 
-              padding: '16px 20px',
-              transition: 'border-color 0.2s ease',
-            }}
-          >
-            {/* Header of Scene Card */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '14px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span className="badge badge-purple" style={{ fontSize: '13px', padding: '4px 12px' }}>
-                  Scene {scene.scene_number}
-                </span>
-                <span className="mono" style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-                  [{scene.time_range}]
-                </span>
-              </div>
-
-              {/* Controls: Camera Angle Selector + Dance Toggle */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Camera size={14} color="#a855f7" />
-                  <select
-                    className="studio-select"
-                    value={scene.camera_angle}
-                    onChange={(e) => handleAngleChange(idx, e.target.value)}
-                    style={{ padding: '6px 10px', fontSize: '13px', width: 'auto', background: '#1e293b' }}
-                  >
-                    {STUDIO_BINDER_SHOTS.map((shot, sIdx) => (
-                      <option key={sIdx} value={shot}>
-                        {shot}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => handleDanceToggle(idx)}
-                  className={`btn-secondary ${scene.dance_action ? 'badge-cyan' : ''}`}
-                  style={{ 
-                    padding: '6px 12px', 
-                    fontSize: '12px', 
-                    background: scene.dance_action ? 'rgba(6, 182, 212, 0.2)' : 'rgba(255,255,255,0.05)',
-                    color: scene.dance_action ? '#22d3ee' : 'var(--text-muted)'
-                  }}
-                  title="Toggle realistic human dance motion prompt for this scene"
-                >
-                  <Activity size={13} />
-                  <span>{scene.dance_action ? 'Dance Enabled' : 'No Dance'}</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Prompts Preview */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '12px' }}>
-              <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '8px', padding: '12px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#c084fc', textTransform: 'uppercase', marginBottom: '6px', fontWeight: 600 }}>
-                  <Video size={13} />
-                  <span>Google Veo Video Prompt</span>
-                </div>
-                <p className="mono" style={{ fontSize: '12px', color: '#cbd5e1', margin: 0, lineHeight: 1.5 }}>
-                  {scene.veo_prompt}
-                </p>
-              </div>
-
-              <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '8px', padding: '12px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#38bdf8', textTransform: 'uppercase', marginBottom: '6px', fontWeight: 600 }}>
-                  <Music size={13} />
-                  <span>Suno Audio Synchronization</span>
-                </div>
-                <p className="mono" style={{ fontSize: '12px', color: '#94a3b8', margin: 0, lineHeight: 1.5 }}>
-                  {scene.suno_prompt}
-                </p>
-              </div>
-            </div>
-          </div>
-        ))}
+        <button
+          type="button"
+          className="df-btn-primary"
+          onClick={onCheckContinuity}
+        >
+          <span>Check continuity</span>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M3 8h10M9 4l4 4-4 4" />
+          </svg>
+        </button>
       </div>
     </section>
   );

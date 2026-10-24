@@ -2,12 +2,14 @@ package models
 
 // ProjectRequest represents user setup inputs
 type ProjectRequest struct {
-	StoryGist     string `json:"story_gist"`
-	TotalDuration int    `json:"total_duration"` // e.g. 60
-	SceneDuration int    `json:"scene_duration"` // 6, 8, or 10
-	VisualStyle   string `json:"visual_style"`
-	MusicGenre    string `json:"music_genre"`
-	IncludeDance  bool   `json:"include_dance"`
+	StoryGist         string `json:"story_gist"`
+	TotalDuration     int    `json:"total_duration"`      // e.g. 120 (2 mins)
+	SceneDuration     int    `json:"scene_duration"`      // e.g. 6, 8, or 10
+	BonusDancePrompts int    `json:"bonus_dance_prompts"` // e.g. 5 additional dance prompts
+	VisualStyle       string `json:"visual_style"`
+	MusicGenre        string `json:"music_genre"`
+	IncludeDance      bool   `json:"include_dance"`
+	Model             string `json:"model,omitempty"`
 }
 
 // CharacterAnchor represents the persistent character visual DNA
@@ -52,6 +54,7 @@ type ExpandedConcept struct {
 	SceneDuration    int             `json:"scene_duration"`
 	VisualStyle      string          `json:"visual_style"`
 	MusicGenre       string          `json:"music_genre"`
+	ModelUsed        string          `json:"model_used"`
 }
 
 // AuditResult represents the output of the continuity audit pass

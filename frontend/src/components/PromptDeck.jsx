@@ -1,232 +1,319 @@
 import React, { useState } from 'react';
-import { Copy, Check, Sparkles, Video, Music, Download, FileText, CheckCircle2 } from 'lucide-react';
+import { assembleShotPrompt } from './TimelineDirector';
 
-export default function PromptDeck({ concept }) {
-  const [copiedIndex, setCopiedIndex] = useState(null);
-  const [copiedType, setCopiedType] = useState(null);
+function DownloadIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M8 2v8M4.5 7L8 10.5 11.5 7M3 13h10" />
+    </svg>
+  );
+}
+
+function CopyIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="5.5" y="5.5" width="8" height="8" rx="1.5" />
+      <path d="M10.5 5.5V3.8A1.3 1.3 0 0 0 9.2 2.5H3.8A1.3 1.3 0 0 0 2.5 3.8v5.4a1.3 1.3 0 0 0 1.3 1.3h1.7" />
+    </svg>
+  );
+}
+
+function triggerDownload(filename, content, mimeType = 'text/plain;charset=utf-8') {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+export default function PromptDeck({
+  projectTitle,
+  gist,
+  storyPrompt,
+  audioPrompt,
+  locked,
+  shots,
+}) {
+  const [mode, setMode] = useState('video'); // 'video' | 'timeline'
   const [copiedAll, setCopiedAll] = useState(false);
-  const [filterMode, setFilterMode] = useState('all'); // 'all', 'veo', 'suno'
+  const [dispatcherOpen, setDispatcherOpen] = useState(false);
 
-  if (!concept || !concept.scenes) return null;
+  const buildAllPromptsText = () => {
+    const header = [
+      `${projectTitle}`,
+      `Sound: ${audioPrompt}`,
+      `Character: ${locked.character}`,
+      `World: ${locked.world}`,
+      `Look: ${locked.look}`,
+      `Light: ${locked.light}`,
+      '',
+    ].join('\n');
 
-  const handleCopySingle = (text, index, type) => {
-    navigator.clipboard.writeText(text);
-    setCopiedIndex(index);
-    setCopiedType(type);
-    setTimeout(() => {
-      setCopiedIndex(null);
-      setCopiedType(null);
-    }, 2000);
+    const body = shots
+      .map((s, idx) => {
+        const num = String(s.number).padStart(2, '0');
+        return `--- SHOT ${num} ---\n${assembleShotPrompt(locked, shots, idx)}`;
+      })
+      .join('\n\n');
+
+    return `${header}\n${body}`;
+  };
+
+  const buildCSV = () => {
+    const escapeCSV = (val) => `"${String(val || '').replace(/"/g, '""')}"`;
+    const rows = [
+      ['Shot', 'Camera', 'Starts', 'Scene', 'Ends', 'Look', 'Character', 'World', 'Light', 'Audio'].map(escapeCSV).join(','),
+    ];
+    shots.forEach((s, idx) => {
+      const starts = idx === 0 ? 'Opening shot' : (shots[idx - 1]?.howItEnds || '');
+      rows.push(
+        [
+          `SHOT ${String(s.number).padStart(2, '0')}`,
+          s.camera,
+          starts,
+          s.whatHappens,
+          s.howItEnds,
+          locked.look,
+          locked.character,
+          locked.world,
+          locked.light,
+          audioPrompt,
+        ]
+          .map(escapeCSV)
+          .join(',')
+      );
+    });
+    return rows.join('\n');
+  };
+
+  const buildJSON = () => {
+    const payload = {
+      project: projectTitle,
+      gist,
+      story_prompt: storyPrompt,
+      audio_prompt: audioPrompt,
+      locked,
+      shots: shots.map((s, idx) => ({
+        shot: s.number,
+        camera: s.camera,
+        starts: idx === 0 ? 'Opening shot' : shots[idx - 1]?.howItEnds,
+        scene: s.whatHappens,
+        ends: s.howItEnds,
+        assembled_prompt: assembleShotPrompt(locked, shots, idx),
+      })),
+    };
+    return JSON.stringify(payload, null, 2);
+  };
+
+  const buildMarkdown = () => {
+    const lines = [
+      `# ${projectTitle}`,
+      '',
+      `## Story & Sound`,
+      `- **Story Prompt:** ${storyPrompt}`,
+      `- **Audio Prompt:** ${audioPrompt}`,
+      '',
+      `## Locked in Every Shot`,
+      `- **Character:** ${locked.character}`,
+      `- **World:** ${locked.world}`,
+      `- **Look:** ${locked.look}`,
+      `- **Light:** ${locked.light}`,
+      '',
+      `## Shots (${shots.length})`,
+      '',
+    ];
+    shots.forEach((s, idx) => {
+      const num = String(s.number).padStart(2, '0');
+      lines.push(`### Shot ${num} · ${s.camera}`);
+      lines.push('```');
+      lines.push(assembleShotPrompt(locked, shots, idx));
+      lines.push('```');
+      lines.push('');
+    });
+    return lines.join('\n');
   };
 
   const handleCopyAll = () => {
-    const header = `=====================================================
-🎬 CONTINUITYSTUDIO: MULTI-SCENE PRODUCTION DECK
-Project: ${concept.title}
-Total Duration: ${concept.total_duration}s | Pacing: ${concept.scene_duration}s per scene (${concept.scenes.length} Scenes)
-Visual Style: ${concept.visual_style}
-Music Style: ${concept.music_genre}
-=====================================================
-
---- CHARACTER DNA ANCHOR ---
-Name: ${concept.character_anchor?.name}
-Visual DNA: ${concept.character_anchor?.visual_dna}
-Lighting Key: ${concept.character_anchor?.lighting_key}
-
---- MASTER SUNO AUDIO PROMPT ---
-${concept.suno_master_prompt}
-
---- LYRICS / RHYMES ---
-${concept.lyrics}
-
-=====================================================
-📽️ CONTINUOUS SCENE PROMPTS (GOOGLE VEO + SUNO)
-=====================================================
-`;
-
-    const scenesText = concept.scenes.map((s) => `
-[SCENE ${s.scene_number}] [${s.time_range}] Camera: ${s.camera_angle}
-GOOGLE VEO PROMPT:
-${s.veo_prompt}
-
-SUNO AUDIO CUE:
-${s.suno_prompt}
------------------------------------------------------`).join('\n');
-
-    navigator.clipboard.writeText(header + scenesText);
+    navigator.clipboard.writeText(buildAllPromptsText());
     setCopiedAll(true);
-    setTimeout(() => setCopiedAll(false), 2500);
+    setTimeout(() => setCopiedAll(false), 2000);
   };
 
+  const videoFormats = [
+    {
+      title: 'Image directing sheet',
+      sub: 'Prompt sheet',
+      actionLabel: 'Download',
+      onClick: () => triggerDownload('continuity-directing-sheet.md', buildMarkdown(), 'text/markdown;charset=utf-8'),
+    },
+    {
+      title: 'Text-to-video matrix',
+      sub: 'Prompts as CSV',
+      actionLabel: 'Download',
+      onClick: () => triggerDownload('continuity-video-matrix.csv', buildCSV(), 'text/csv;charset=utf-8'),
+    },
+    {
+      title: 'Realtime video dispatcher',
+      sub: 'Live prompt dispatch',
+      actionLabel: dispatcherOpen ? 'Close' : 'Open',
+      onClick: () => setDispatcherOpen((prev) => !prev),
+    },
+  ];
+
+  const timelineFormats = [
+    {
+      title: 'Timeline shot markers',
+      sub: 'Shot handoff & camera sheet',
+      actionLabel: 'Download',
+      onClick: () => triggerDownload('continuity-timeline-markers.txt', buildAllPromptsText()),
+    },
+    {
+      title: 'Audio & narration cue sheet',
+      sub: 'Sound brief & shot sync',
+      actionLabel: 'Download',
+      onClick: () =>
+        triggerDownload(
+          'continuity-audio-cues.txt',
+          `AUDIO BRIEF:\n${audioPrompt}\n\nSHOT SYNC:\n` +
+            shots.map((s) => `SHOT ${String(s.number).padStart(2, '0')} (${s.camera}): ${s.whatHappens}`).join('\n')
+        ),
+    },
+    {
+      title: 'NLE interchange bundle',
+      sub: 'Structured timeline JSON',
+      actionLabel: 'Download',
+      onClick: () => triggerDownload('continuity-timeline.json', buildJSON(), 'application/json;charset=utf-8'),
+    },
+  ];
+
+  const activeFormats = mode === 'video' ? videoFormats : timelineFormats;
+
   return (
-    <section className="studio-card animate-unfold" style={{ marginBottom: '40px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '14px', flexWrap: 'wrap', gap: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <Sparkles size={20} color="#a855f7" />
-          <h2 style={{ fontSize: '18px', margin: 0 }}>Step 5: Production Prompt Deck (Veo & Suno)</h2>
-        </div>
+    <section className="df-col-760" aria-labelledby="export-heading">
+      <div style={{ marginBottom: '28px' }}>
+        <p className="df-eyebrow">{projectTitle}</p>
+        <h1 id="export-heading" className="df-title-xl">
+          Export your prompts
+        </h1>
+        <p className="df-intro">
+          Copy everything at once, or pick the format your tool expects.
+        </p>
+      </div>
 
-        {/* Action: Copy All */}
-        <button 
+      {/* Primary Action */}
+      <div style={{ marginBottom: '36px' }}>
+        <button
+          type="button"
+          className="df-btn-primary"
           onClick={handleCopyAll}
-          className="btn-primary"
-          style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #2563eb 100%)' }}
         >
-          {copiedAll ? <Check size={16} color="#34d399" /> : <Download size={16} />}
-          <span>{copiedAll ? 'Full Deck Copied to Clipboard!' : 'Copy Master Production Deck'}</span>
+          <CopyIcon />
+          <span>{copiedAll ? `Copied all ${shots.length} prompts` : `Copy all ${shots.length} prompts`}</span>
         </button>
       </div>
 
-      {/* Filter Tabs */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
-        <button
-          onClick={() => setFilterMode('all')}
-          className={`btn-secondary ${filterMode === 'all' ? 'badge-purple' : ''}`}
-          style={{ 
-            padding: '6px 14px', 
-            fontSize: '13px', 
-            background: filterMode === 'all' ? 'rgba(168, 85, 247, 0.25)' : 'rgba(255,255,255,0.04)',
-            color: filterMode === 'all' ? '#ffffff' : 'var(--text-muted)'
-          }}
-        >
-          All Prompts ({concept.scenes.length})
-        </button>
-        <button
-          onClick={() => setFilterMode('veo')}
-          className={`btn-secondary ${filterMode === 'veo' ? 'badge-purple' : ''}`}
-          style={{ 
-            padding: '6px 14px', 
-            fontSize: '13px', 
-            background: filterMode === 'veo' ? 'rgba(168, 85, 247, 0.25)' : 'rgba(255,255,255,0.04)',
-            color: filterMode === 'veo' ? '#ffffff' : 'var(--text-muted)'
-          }}
-        >
-          <Video size={13} />
-          <span>Google Veo Only</span>
-        </button>
-        <button
-          onClick={() => setFilterMode('suno')}
-          className={`btn-secondary ${filterMode === 'suno' ? 'badge-cyan' : ''}`}
-          style={{ 
-            padding: '6px 14px', 
-            fontSize: '13px', 
-            background: filterMode === 'suno' ? 'rgba(6, 182, 212, 0.25)' : 'rgba(255,255,255,0.04)',
-            color: filterMode === 'suno' ? '#ffffff' : 'var(--text-muted)'
-          }}
-        >
-          <Music size={13} />
-          <span>Suno Music Only</span>
-        </button>
-      </div>
-
-      {/* Cards List */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        {concept.scenes.map((scene, idx) => (
-          <div 
-            key={idx}
-            style={{ 
-              background: 'rgba(15, 23, 42, 0.65)', 
-              border: '1px solid rgba(255,255,255,0.07)', 
-              borderRadius: '12px', 
-              padding: '18px 20px',
-              transition: 'border-color 0.2s ease',
-            }}
+      {/* Segmented Switch */}
+      <div style={{ marginBottom: '24px' }}>
+        <div className="df-segmented" role="group" aria-label="Export target">
+          <button
+            type="button"
+            className="df-segment-btn"
+            aria-pressed={mode === 'video'}
+            onClick={() => setMode('video')}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span className="badge badge-purple" style={{ fontSize: '12px' }}>
-                  Scene {scene.scene_number}
-                </span>
-                <span className="mono" style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-                  [{scene.time_range}]
-                </span>
-                <span className="badge badge-cyan" style={{ fontSize: '12px' }}>
-                  {scene.camera_angle}
-                </span>
+            Video tool
+          </button>
+          <button
+            type="button"
+            className="df-segment-btn"
+            aria-pressed={mode === 'timeline'}
+            onClick={() => setMode('timeline')}
+          >
+            Editing timeline
+          </button>
+        </div>
+      </div>
+
+      {/* Format Rows */}
+      <div>
+        {activeFormats.map((item) => (
+          <div key={item.title} className="df-list-row">
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: '12px 20px',
+                flexWrap: 'wrap',
+              }}
+            >
+              <div>
+                <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-main)', marginBottom: '4px' }}>
+                  {item.title}
+                </div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)' }}>
+                  {item.sub}
+                </div>
               </div>
-              <span className="badge badge-emerald">
-                <CheckCircle2 size={12} /> Continuity Verified
-              </span>
+
+              <button
+                type="button"
+                className="df-btn-ghost"
+                onClick={item.onClick}
+              >
+                <DownloadIcon />
+                <span>{item.actionLabel}</span>
+              </button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {/* Veo Box */}
-              {(filterMode === 'all' || filterMode === 'veo') && (
-                <div style={{ 
-                  background: 'rgba(0,0,0,0.3)', 
-                  border: '1px solid rgba(168, 85, 247, 0.2)', 
-                  borderRadius: '10px', 
-                  padding: '12px 16px' 
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: 700, color: '#c084fc', textTransform: 'uppercase' }}>
-                      <Video size={13} />
-                      <span>Google Veo Prompt (Video)</span>
-                    </div>
-                    <button 
-                      onClick={() => handleCopySingle(scene.veo_prompt, idx, 'veo')}
-                      className="btn-secondary"
-                      style={{ padding: '4px 10px', fontSize: '12px' }}
-                    >
-                      {copiedIndex === idx && copiedType === 'veo' ? (
-                        <>
-                          <Check size={13} color="#34d399" />
-                          <span style={{ color: '#34d399' }}>Copied</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy size={13} />
-                          <span>Copy Veo Prompt</span>
-                        </>
-                      )}
-                    </button>
+            {item.title === 'Realtime video dispatcher' && dispatcherOpen && (
+              <div style={{ marginTop: '18px' }}>
+                <div className="df-dashed-box">
+                  <span className="df-label" style={{ marginBottom: '8px' }}>
+                    LIVE DISPATCH STREAM ({shots.length} SHOTS READY)
+                  </span>
+                  <div className="df-readout" style={{ maxHeight: '240px', overflowY: 'auto' }}>
+                    {buildAllPromptsText()}
                   </div>
-                  <p className="mono" style={{ fontSize: '12px', color: '#f1f5f9', margin: 0, lineHeight: 1.5 }}>
-                    {scene.veo_prompt}
-                  </p>
                 </div>
-              )}
-
-              {/* Suno Box */}
-              {(filterMode === 'all' || filterMode === 'suno') && (
-                <div style={{ 
-                  background: 'rgba(0,0,0,0.3)', 
-                  border: '1px solid rgba(6, 182, 212, 0.2)', 
-                  borderRadius: '10px', 
-                  padding: '12px 16px' 
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: 700, color: '#38bdf8', textTransform: 'uppercase' }}>
-                      <Music size={13} />
-                      <span>Suno Prompt (Audio Cue)</span>
-                    </div>
-                    <button 
-                      onClick={() => handleCopySingle(scene.suno_prompt, idx, 'suno')}
-                      className="btn-secondary"
-                      style={{ padding: '4px 10px', fontSize: '12px' }}
-                    >
-                      {copiedIndex === idx && copiedType === 'suno' ? (
-                        <>
-                          <Check size={13} color="#34d399" />
-                          <span style={{ color: '#34d399' }}>Copied</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy size={13} />
-                          <span>Copy Suno Cue</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                  <p className="mono" style={{ fontSize: '12px', color: '#94a3b8', margin: 0, lineHeight: 1.5 }}>
-                    {scene.suno_prompt}
-                  </p>
-                </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         ))}
       </div>
+
+      {/* Raw Data Note */}
+      <p style={{ marginTop: '24px', fontSize: '14px', color: 'var(--text-muted)' }}>
+        Need the raw data?{' '}
+        <button
+          type="button"
+          onClick={() => triggerDownload('continuity-prompts.json', buildJSON(), 'application/json;charset=utf-8')}
+          style={{ background: 'none', border: 'none', color: 'var(--text-soft)', textDecoration: 'underline', cursor: 'pointer', font: 'inherit', padding: 0 }}
+        >
+          JSON
+        </button>
+        ,{' '}
+        <button
+          type="button"
+          onClick={() => triggerDownload('continuity-prompts.txt', buildAllPromptsText())}
+          style={{ background: 'none', border: 'none', color: 'var(--text-soft)', textDecoration: 'underline', cursor: 'pointer', font: 'inherit', padding: 0 }}
+        >
+          TXT
+        </button>{' '}
+        and{' '}
+        <button
+          type="button"
+          onClick={() => triggerDownload('continuity-prompts.md', buildMarkdown(), 'text/markdown;charset=utf-8')}
+          style={{ background: 'none', border: 'none', color: 'var(--text-soft)', textDecoration: 'underline', cursor: 'pointer', font: 'inherit', padding: 0 }}
+        >
+          Markdown
+        </button>{' '}
+        are available too.
+      </p>
     </section>
   );
 }
