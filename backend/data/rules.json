@@ -26,5 +26,19 @@
     "constraint": "Scene 3 Continuity Enforced: Character [Kaelen] costume (tall protagonist wearing an iridescent cobalt-blue leather aviator jacket with brass buckles, dark denim trousers, combat boots, silver-streaked dark hair) and lighting key (dramatic neon-cyan rim lighting with warm golden-amber practical streetlamp fill) strictly locked.",
     "version": 1,
     "last_patched": "2026-10-21T16:57:28+11:00"
+  },
+  {
+    "id": "rule_patch_7800",
+    "category": "character",
+    "constraint": "Scene 1 Continuity Enforced: Character [Sparky] costume (Cute toddler-proportioned 3D Pixar baby robot, metallic teal polished chrome body, glowing brass joint rings, expressive round yellow LED eye displays) and lighting key (Cold northern lights violet and cyan rim light with warm lantern fill) strictly locked.",
+    "version": 1,
+    "last_patched": "2026-10-26T10:40:01+11:00"
+  },
+  {
+    "id": "rule_patch_2500",
+    "category": "character",
+    "constraint": "Scene 2 Continuity Enforced: Character [Sparky] costume (Cute toddler-proportioned 3D Pixar baby robot, metallic teal polished chrome body, glowing brass joint rings, expressive round yellow LED eye displays) and lighting key (Cold northern lights violet and cyan rim light with warm lantern fill) strictly locked.",
+    "version": 1,
+    "last_patched": "2026-10-26T10:40:01+11:00"
   }
 ]

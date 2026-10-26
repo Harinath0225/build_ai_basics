@@ -627,3 +627,269 @@ body {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* Black Hole Accretion Disk Loader (Deep Field Space) */
+@keyframes bhRotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes bhCounterRotate {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes bhPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+}
+
+@keyframes bhPhotonPulse {
+  0%, 100% {
+    opacity: 0.85;
+    box-shadow: 0 0 10px #00f0ff, 0 0 18px rgba(255, 122, 184, 0.35);
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 18px #00f0ff, 0 0 32px rgba(255, 122, 184, 0.6);
+  }
+}
+
+/* Fullscreen Immersive Black Hole Accretion Overlay */
+.df-blackhole-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background-color: rgba(7, 7, 24, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  animation: fadeIn 0.25s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.df-bh-overlay-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(600px 600px at 50% 50%, rgba(196, 40, 130, 0.16), transparent 70%),
+    radial-gradient(800px 500px at 50% 45%, rgba(121, 40, 202, 0.2), transparent 75%);
+}
+
+.df-blackhole-centerpiece {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  max-width: 620px;
+  padding: 40px 32px;
+  background: rgba(20, 18, 46, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-card);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7), 0 0 40px rgba(196, 40, 130, 0.18);
+  animation: scaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes scaleUp {
+  from {
+    transform: scale(0.92);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.df-blackhole-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 36px 24px;
+  background: rgba(20, 18, 46, 0.85);
+  border: 1px solid var(--line-card);
+  border-radius: var(--radius-card);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  animation: slideDownFade 0.3s ease;
+}
+
+.df-bh-viewport {
+  position: relative;
+  width: 110px;
+  height: 110px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.df-bh-lensing-halo {
+  position: absolute;
+  inset: -14px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(196, 40, 130, 0.28) 0%, rgba(138, 59, 224, 0.22) 36%, rgba(0, 240, 255, 0.1) 60%, transparent 74%);
+  filter: blur(8px);
+  animation: bhPulse 3.2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.df-bh-disk-outer {
+  position: absolute;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 0 14px rgba(255, 122, 184, 0.45));
+}
+
+.df-bh-conic-spin {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    #c42882 0%,
+    #ff7ab8 24%,
+    #00f0ff 48%,
+    #7ee8f0 56%,
+    #8a3be0 76%,
+    transparent 90%,
+    #c42882 100%
+  );
+  animation: bhRotate 2.2s linear infinite;
+  mask-image: radial-gradient(circle, transparent 38%, black 42%, black 68%, transparent 72%);
+  -webkit-mask-image: radial-gradient(circle, transparent 38%, black 42%, black 68%, transparent 72%);
+}
+
+.df-bh-vertical-arc {
+  position: absolute;
+  width: 88px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(0, 240, 255, 0.7);
+  filter: drop-shadow(0 0 8px rgba(0, 240, 255, 0.8));
+  transform: rotate(-18deg);
+  animation: bhCounterRotate 7s linear infinite;
+  pointer-events: none;
+}
+
+.df-bh-photon-ring {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1.5px solid #00f0ff;
+  animation: bhPhotonPulse 2s ease-in-out infinite;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.df-bh-event-horizon {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #04040c;
+  z-index: 3;
+  box-shadow: inset 0 0 10px #000000, 0 0 12px rgba(0, 0, 0, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.df-bh-shadow-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: radial-gradient(circle, #020208 0%, #060614 100%);
+}
+
+.df-bh-particle {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #00f0ff;
+  box-shadow: 0 0 6px #00f0ff;
+  z-index: 4;
+}
+
+.df-bh-p1 {
+  top: 14px;
+  right: 22px;
+  animation: bhRotate 1.8s linear infinite;
+  transform-origin: 33px 41px;
+}
+
+.df-bh-p2 {
+  bottom: 16px;
+  left: 20px;
+  background: #ff7ab8;
+  box-shadow: 0 0 6px #ff7ab8;
+  animation: bhCounterRotate 2.4s linear infinite;
+  transform-origin: 35px -14px;
+}
+
+/* Compact Button Black Hole Loader */
+.df-blackhole-compact {
+  width: 20px;
+  height: 20px;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+}
+
+.df-bh-disk-compact {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    #c42882 0%,
+    #ff7ab8 26%,
+    #00f0ff 52%,
+    #8a3be0 78%,
+    transparent 90%,
+    #c42882 100%
+  );
+  animation: bhRotate 1.4s linear infinite;
+  mask-image: radial-gradient(circle, transparent 38%, black 42%);
+  -webkit-mask-image: radial-gradient(circle, transparent 38%, black 42%);
+}
+
+.df-bh-horizon-compact {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #04040c;
+  border: 1px solid rgba(0, 240, 255, 0.7);
+  box-shadow: 0 0 4px rgba(0, 240, 255, 0.4);
+}

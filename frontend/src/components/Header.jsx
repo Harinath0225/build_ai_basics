@@ -52,7 +52,7 @@ function StepIcon({ id }) {
   }
 }
 
-export default function Header({ currentScreen, onNavigate }) {
+export default function Header({ currentScreen, onNavigate, modelUsed, backendOnline }) {
   const steps = [
     { id: 'story', label: 'Story' },
     { id: 'sound', label: 'Sound' },
@@ -62,15 +62,46 @@ export default function Header({ currentScreen, onNavigate }) {
 
   return (
     <header className="df-header">
-      <button
-        type="button"
-        className="df-brand"
-        onClick={() => onNavigate('story')}
-        aria-label="Continuity Studio — Go to first step"
-      >
-        <BrandMark />
-        <span>Continuity Studio</span>
-      </button>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+        <button
+          type="button"
+          className="df-brand"
+          onClick={() => onNavigate('story')}
+          aria-label="Continuity Studio — Go to first step"
+        >
+          <BrandMark />
+          <span>Continuity Studio</span>
+        </button>
+
+        {/* Live LLM Integration Status Badge */}
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '3px 9px',
+            borderRadius: '9999px',
+            background: 'rgba(255, 255, 255, 0.04)',
+            border: '1px solid var(--line-hairline)',
+            fontSize: '11px',
+            fontFamily: 'var(--font-mono)',
+            color: 'var(--text-muted)',
+          }}
+          title={backendOnline ? "Connected to Google AI Studio Gemini API via Go server" : "Local engine active"}
+        >
+          <span
+            style={{
+              width: '6px',
+              height: '6px',
+              borderRadius: '50%',
+              background: backendOnline ? 'var(--accent-cyan)' : 'var(--accent-gold)',
+              boxShadow: backendOnline ? '0 0 8px rgba(0, 240, 255, 0.5)' : 'none',
+            }}
+            aria-hidden="true"
+          />
+          <span>{modelUsed ? `Directed by ${modelUsed}` : (backendOnline ? 'Gemini AI Studio · Ready' : 'Local Engine · Active')}</span>
+        </div>
+      </div>
 
       {currentScreen === 'export' ? (
         <button

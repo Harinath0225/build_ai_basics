@@ -1,4 +1,5 @@
 import React from 'react';
+import BlackHoleLoader from './BlackHoleLoader';
 
 export default function ConceptStudio({
   gist,
@@ -156,10 +157,20 @@ export default function ConceptStudio({
         </div>
       )}
 
+      {/* Fullscreen Space Black Hole Accretion Disk Loader when generating */}
+      {isLoading && (
+        <BlackHoleLoader
+          size="fullscreen"
+          label="Accreting 3D Pixar Storyline & Suno Soundtrack"
+          sublabel={`Gemini AI Studio · Event horizon locking ${totalPrompts} prompts (${storyShotCount} story + ${danceCount} dance) across ${minsLabel}...`}
+        />
+      )}
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
         <button
           type="button"
           className="df-btn-ghost"
+          disabled={isLoading}
           onClick={onTryDemo}
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#e9c98f" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -174,11 +185,20 @@ export default function ConceptStudio({
           disabled={!hasText || isLoading}
           onClick={onContinue}
         >
-          <span>{isLoading ? 'Generating Pixar & Suno prompts...' : 'Continue'}</span>
-          {hasText && !isLoading && (
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M3 8h10M9 4l4 4-4 4" />
-            </svg>
+          {isLoading ? (
+            <>
+              <BlackHoleLoader size="compact" />
+              <span>Accreting Prompts...</span>
+            </>
+          ) : (
+            <>
+              <span>Continue</span>
+              {hasText && (
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M3 8h10M9 4l4 4-4 4" />
+                </svg>
+              )}
+            </>
           )}
         </button>
       </div>

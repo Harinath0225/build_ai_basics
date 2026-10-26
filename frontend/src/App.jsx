@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Header from './components/Header';
 import ConceptStudio from './components/ConceptStudio';
 import LyricistLounge from './components/LyricistLounge';
@@ -46,7 +46,7 @@ const DEMO_LOCKED = {
   light: 'Twilight, warm gold key light with soft violet shadows.',
 };
 
-const BASE_STORY_Templates = [
+const BASE_STORY_TEMPLATES = [
   {
     camera: 'Wide macro dolly',
     whatHappens: 'Pip hangs in gentle suspension above the meadow in his 3D Pixar clockwork ship, ears twitching beneath his straw hat and copper goggles.',
@@ -196,7 +196,7 @@ function buildShotList(totalDuration, shotDuration, bonusDanceCount) {
   const result = [];
 
   for (let i = 0; i < storyCount; i++) {
-    const tpl = BASE_STORY_Templates[i % BASE_STORY_Templates.length];
+    const tpl = BASE_STORY_TEMPLATES[i % BASE_STORY_TEMPLATES.length];
     const startSec = i * shotDuration;
     const endSec = (i + 1) * shotDuration;
     result.push({
@@ -229,6 +229,8 @@ function buildShotList(totalDuration, shotDuration, bonusDanceCount) {
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState('story'); // 'story' | 'sound' | 'shots' | 'check' | 'export'
   const [projectTitle, setProjectTitle] = useState('Dreamer Pip & The Velvet Meadow');
+  const [modelUsed, setModelUsed] = useState(null);
+  const [backendOnline, setBackendOnline] = useState(false);
 
   // Duration & Prompt Count settings (Default: 2 mins = 120s, 6s per shot = 20 video prompts, +5 bonus dance prompts = 25 total)
   const [totalDuration, setTotalDuration] = useState(120);
@@ -256,6 +258,21 @@ export default function App() {
 
   // Step 4: Continuity Check manual resolutions
   const [resolvedFlags, setResolvedFlags] = useState({});
+
+  // Check backend health on mount
+  useEffect(() => {
+    fetch('http://localhost:8080/api/health')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && data.status === 'ok') {
+          setBackendOnline(true);
+          if (data.active_model) {
+            setModelUsed(data.active_model);
+          }
+        }
+      })
+      .catch(() => setBackendOnline(false));
+  }, []);
 
   const syncTimingAndPrompts = (newTotal, newShotDur, newDanceCount) => {
     const newStoryCount = Math.max(1, Math.floor(newTotal / newShotDur));
@@ -291,7 +308,7 @@ export default function App() {
       const autoStory =
         val.trim() === DEMO_GIST
           ? DEMO_STORY_PROMPT
-          : `3D Animated Pixar film treatment: ${val.trim()} Directed across ${storyShotCount} narrative shots (${totalDuration}s total) plus ${bonusDanceCount} expressive Pixar 3D character dance prompts with locked wardrobe and twilight lighting.`;
+          : `3D Animated Pixar film treatment: ${val.trim()} Directed across ${storyShotCount} narrative shots (${totalDuration}s total) plus ${bonusDanceCount} expressive Pixar 3D character dance prompts with locked wardrobe and lighting.`;
       if (storyPrompt === suggestedStoryPrompt) {
         setStoryPrompt(autoStory);
       }
@@ -321,11 +338,7 @@ export default function App() {
   const handleContinueFromStory = async () => {
     if (!gist.trim()) return;
 
-    if (gist.trim() === DEMO_GIST) {
-      setCurrentScreen('sound');
-      return;
-    }
-
+    // Call live Go agent server with Google AI Studio Gemini
     setIsLoading(true);
     try {
       const res = await fetch('http://localhost:8080/api/expand', {
@@ -344,6 +357,9 @@ export default function App() {
 
       if (res.ok) {
         const data = await res.json();
+        if (data.model_used) {
+          setModelUsed(data.model_used);
+        }
         if (data.title) setProjectTitle(data.title);
         if (data.logline) {
           setStoryPrompt(data.logline);
@@ -385,7 +401,7 @@ export default function App() {
         }
       }
     } catch {
-      // Offline / local fallback keeps studio working seamlessly
+      // Offline fallback: if backend is unreachable, continue with generated local plan
     } finally {
       setIsLoading(false);
       setCurrentScreen('sound');
@@ -415,32 +431,49 @@ export default function App() {
   // Continuity check across all generated story & dance prompts
   const flaggedItems = useMemo(() => {
     const items = [];
+    const isDemo = projectTitle.includes('Pip');
 
     shots.forEach((shot, idx) => {
       const textLower = shot.whatHappens.toLowerCase();
       const prevShot = idx > 0 ? shots[idx - 1] : null;
 
-      // Check 1: Shot 07 missing copper goggles
-      const hasGoggles = textLower.includes('goggles');
-      if (shot.number === 7) {
-        const isFixed = hasGoggles || resolvedFlags[7];
-        items.push({
-          shotNumber: 7,
-          reason: 'The copper goggles are missing. Pip wears them in every other shot.',
-          suggestion:
-            "Close-up on Pip's face framed by his copper goggles and tiny straw hat in the glow of the butter hills, ears twitching.",
-          suggestedCamera: null,
-          resolved: !!isFixed,
-        });
-        return;
+      // Check 1: Character feature anchor check
+      if (isDemo) {
+        const hasGoggles = textLower.includes('goggles');
+        if (shot.number === 7) {
+          const isFixed = hasGoggles || resolvedFlags[7];
+          items.push({
+            shotNumber: 7,
+            reason: 'The copper goggles are missing. Pip wears them in every other shot.',
+            suggestion:
+              "Close-up on Pip's face framed by his copper goggles and tiny straw hat in the glow of the butter hills, ears twitching.",
+            suggestedCamera: null,
+            resolved: !!isFixed,
+          });
+          return;
+        }
+      } else {
+        // Custom story: check if character anchor name is missing in middle shot
+        const charName = (locked.character.split(':')[0] || '').trim().toLowerCase();
+        if (charName && idx === Math.floor(storyShotCount / 2) && !textLower.includes(charName)) {
+          const isFixed = resolvedFlags[shot.number];
+          items.push({
+            shotNumber: shot.number,
+            reason: `Protagonist [${charName}] is not mentioned in this key story beat.`,
+            suggestion: `${locked.character.split(':')[0]} steps into frame with full wardrobe details intact.`,
+            suggestedCamera: null,
+            resolved: !!isFixed,
+          });
+          return;
+        }
       }
 
-      // Check 2: Neighbouring shots repeating the same camera move (e.g. Shot 11 repeating Shot 10)
+      // Check 2: Neighbouring shots repeating the same camera move
       const sameCameraAsPrev =
         prevShot &&
         prevShot.camera.trim().toLowerCase() === shot.camera.trim().toLowerCase();
 
-      if (shot.number === 11 || sameCameraAsPrev) {
+      if ((isDemo && shot.number === 11) || sameCameraAsPrev) {
         const prevNum = prevShot ? String(prevShot.number).padStart(2, '0') : '10';
         const isFixed = !sameCameraAsPrev || resolvedFlags[shot.number];
         items.push({
@@ -455,7 +488,7 @@ export default function App() {
     });
 
     return items;
-  }, [shots, resolvedFlags]);
+  }, [shots, resolvedFlags, projectTitle, locked.character, storyShotCount]);
 
   const handleAcceptSuggestion = async (shotNumber) => {
     const flag = flaggedItems.find((f) => f.shotNumber === shotNumber);
@@ -483,7 +516,7 @@ export default function App() {
           visual_style: locked.look,
           character_anchor: {
             id: 'char_01',
-            name: 'Pip',
+            name: (locked.character.split(':')[0] || 'Character').trim(),
             visual_dna: locked.character,
             lighting_key: locked.light,
           },
@@ -527,6 +560,8 @@ export default function App() {
       <Header
         currentScreen={currentScreen}
         onNavigate={(screen) => setCurrentScreen(screen)}
+        modelUsed={modelUsed}
+        backendOnline={backendOnline}
       />
 
       {/* Main Content Stage */}
